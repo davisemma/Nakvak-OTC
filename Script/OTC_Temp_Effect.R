@@ -2,6 +2,7 @@ rm(list=ls())
 library(tidyverse)
 library(tidylog)
 library(lubridate)
+
 setwd("Data")
 
 #Read in GROUND TEMPS
@@ -11,7 +12,7 @@ read_plus <- function(flnm) {
 }
 
 tbl_with_sources <-
-  list.files(path = "OTC Temp Effect/Ground",
+  list.files(path = "OTC Temp Effect/Ground Daily",
              pattern = "*.csv", 
              full.names = T) %>% 
   map_df(~read_plus(.))
