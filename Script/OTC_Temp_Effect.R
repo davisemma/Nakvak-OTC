@@ -21,7 +21,7 @@ ground <- tbl_with_sources
 names(ground) <- c("date", "t_ground", "plot")
 ground <- ground %>%
   mutate(year = as.integer(substr(date, 1, 4)),
-         plot = substr(plot, 24, 35),
+         plot = substr(plot, 30, 41),
          subsite = substr(plot, 10,12),
          treatment = substr(plot, 6,8))
 
@@ -81,6 +81,21 @@ ggplot(ga_wide, aes(x = as.integer(year), y = diff_otc_ctl, color = subsite))+
 #3. In general, soil temps are lower in wet plots than dry plots
 #4. Soil temps often cooler than air temps in wet plots, usually warmer than air temps in dry plots
 
+#Calculating SNOW DAY from ground temperature ----
+#Read in hourly data 
+tbl_with_sources_hourly <-
+  list.files(path = "OTC Temp Effect/Ground Hourly",
+             pattern = "*.csv", 
+             full.names = T) %>% 
+  map_df(~read_plus(.))
+
+ground_hourly <- tbl_with_sources_hourly
+names(ground_hourly) <- c("date", "t_ground", "plot")
+ground_hourly <- ground_hourly %>%
+  mutate(year = as.integer(substr(date, 1, 4)),
+         plot = substr(plot, 31, 42),
+         subsite = substr(plot, 10,12),
+         treatment = substr(plot, 6,8))
 
 
 
