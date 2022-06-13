@@ -14,9 +14,10 @@ library(glmmTMB)
 library(performance)
 library(bbmle)
 
+getwd()
 #READ DATA ----
-data <- read.csv("plot_data.csv") 
-holders <- read.csv("plot_year_genus.csv") #file with all lifeform x plot combinations
+data <- read.csv("Point Frame/plot_data.csv") 
+holders <- read.csv("Point Frame/plot_year_genus.csv") #file with all lifeform x plot combinations
 
 #FROMAT DATA ----
 #Calculate n encounters for each lifeform x plot
@@ -164,32 +165,32 @@ sjPlot::plot_model(dry_lichen_nb_mod, type = "int")
 #WET - LICHEN
 #Zero inflation definitely an issue in wet data, so choose between poiss and nbino hurdles
 wet_lichen_p_mod <- glmmTMB(encounters ~ treatment*year_scale
-                                   + (1|plot) + (1|year_scale), ziformula = ~0,
+                                   + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
                                    family = poisson, data = filter(lichen, subsite == 'NAKVAKWET'))
 
 check_overdispersion(wet_lichen_p_mod) #data are under-dispersed
 check_zeroinflation(wet_lichen_p_mod) #zero inflation not an issue
 
 wet_lichen_nb_mod <- glmmTMB(encounters ~ treatment*year_scale
-                                    + (1|plot) + (1|year_scale), ziformula = ~0,
+                                    + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
                                     family = nbinom1, data = filter(lichen, subsite == 'NAKVAKWET'))
 
 check_overdispersion(wet_lichen_nb_mod)
 check_zeroinflation(wet_lichen_nb_mod) #slight overfitting of zero's
 
 wet_lichen_zap_mod <- glmmTMB(encounters ~ treatment*year_scale
-                             + (1|plot) + (1|year_scale), ziformula = ~1,
+                             + (1|plot_pair/plot) + (1|year_scale), ziformula = ~1,
                              family = truncated_poisson, data = filter(lichen, subsite == 'NAKVAKWET'))
 
 wet_lichen_zinb_mod <- glmmTMB(encounters ~ treatment*year_scale
-                               + (1|plot) + (1|year_scale), ziformula = ~1,
+                               + (1|plot_pair/plot) + (1|year_scale), ziformula = ~1,
                                family = truncated_nbinom1, data = filter(lichen, subsite == 'NAKVAKWET'))
 
 AICtab(wet_lichen_p_mod, wet_lichen_nb_mod,
        wet_lichen_zap_mod, wet_lichen_zinb_mod) #
 summary(wet_lichen_p_mod) 
 
-sjPlot::plot_model(wet_lichen_p_mod, type = 'int', terms = "year_scale")
+sjPlot::plot_model(wet_lichen_p_mod, type = 'int')
 #Overall, wet lichen model is probably not great because so few observations overall
 
 #SDECI ----
@@ -227,14 +228,14 @@ summary(sdeci_nb_mod)
 
 #SDECI - DRY
 dry_sdeci_p_mod <- glmmTMB(encounters ~ treatment*year_scale
-                            + (1|plot) + (1|year_scale), ziformula = ~0,
+                            + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
                             family = poisson, data = filter(sdeci, subsite == 'NAKVAKDRY'))
 
 check_overdispersion(dry_sdeci_p_mod)
 check_zeroinflation(dry_sdeci_p_mod) #weak underfitting of zeros
 
 dry_sdeci_nb_mod <- glmmTMB(encounters ~ treatment*year_scale
-                           + (1|plot) + (1|year_scale), ziformula = ~0,
+                           + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
                            family = nbinom1, data = filter(sdeci, subsite == 'NAKVAKDRY'))
 
 check_overdispersion(dry_sdeci_nb_mod)
@@ -242,7 +243,7 @@ check_zeroinflation(dry_sdeci_nb_mod) #weak underfitting of zeros
 
 #Check if 0-inflation is really needed
 dry_sdeci_zanb_mod <- glmmTMB(encounters ~ treatment*year_scale
-                           + (1|plot) + (1|year_scale), ziformula = ~1,
+                           + (1|plot_pair/plot) + (1|year_scale), ziformula = ~1,
                            family = truncated_nbinom1, data = filter(sdeci, subsite == 'NAKVAKDRY'))
 
 check_overdispersion(dry_sdeci_zanb_mod)
@@ -252,14 +253,14 @@ summary(dry_sdeci_nb_mod)
 
 #SDECI - WET
 wet_sdeci_p_mod <- glmmTMB(encounters ~ treatment*year_scale
-                           + (1|plot) + (1|year_scale), ziformula = ~0,
+                           + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
                            family = poisson, data = filter(sdeci, subsite == 'NAKVAKWET'))
 
 check_overdispersion(wet_sdeci_p_mod)
 check_zeroinflation(wet_sdeci_p_mod) #no zeros in data, try nb model
 
 wet_sdeci_nb_mod <- glmmTMB(encounters ~ treatment*year_scale
-                           + (1|plot) + (1|year_scale), ziformula = ~0,
+                           + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
                            family = nbinom1, data = filter(sdeci, subsite == 'NAKVAKWET'))
 
 check_overdispersion(wet_sdeci_nb_mod)
@@ -287,7 +288,7 @@ summary(moss_subsite_mod)
 
 #DRY - MOSS
 dry_moss_p_mod <- glmmTMB(encounters ~ treatment*year_scale
-                               + (1|plot) + (1|year_scale), ziformula = ~0,
+                               + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
                                family = poisson, data = filter(moss, subsite == 'NAKVAKDRY'))
 
 check_overdispersion(dry_moss_p_mod)
@@ -295,21 +296,21 @@ check_zeroinflation(dry_moss_p_mod)
 #overdispersion detected; zero inflation slight issue 
 
 dry_moss_zap_mod <- glmmTMB(encounters ~ treatment*year_scale
-                          + (1|plot) + (1|year_scale), ziformula = ~1,
+                          + (1|plot_pair/plot) + (1|year_scale), ziformula = ~1,
                           family = truncated_poisson, data = filter(moss, subsite == 'NAKVAKDRY'))
 
 check_overdispersion(dry_moss_zap_mod)
 check_zeroinflation(dry_moss_zap_mod) #Doesn't address dispersion and worse fit for 0's
 
 dry_moss_nb_mod <- glmmTMB(encounters ~ treatment*year_scale
-                                 + (1|plot) + (1|year_scale), ziformula = ~0,
+                                 + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
                                  family = nbinom1, data = filter(moss, subsite == 'NAKVAKDRY'))
 
 check_overdispersion(dry_moss_nb_mod)
 check_zeroinflation(dry_moss_nb_mod)
 
 dry_moss_zanb_mod <- glmmTMB(encounters ~ treatment*year_scale
-                               + (1|plot) + (1|year_scale), ziformula = ~1,
+                               + (1|plot_pair/plot) + (1|year_scale), ziformula = ~1,
                                family = truncated_nbinom1, data = filter(moss, subsite == 'NAKVAKDRY'))
 
 check_overdispersion(dry_moss_zanb_mod)
@@ -322,13 +323,13 @@ summary(dry_moss_zanb_mod)
 sjPlot::plot_model(dry_moss_zanb_mod, type = "int")
 #WET - MOSS
 wet_moss_p_mod <- glmmTMB(encounters ~ treatment*year_scale
-                                 + (1|plot) + (1|year_scale), ziformula = ~0,
+                                 + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
                                  family = poisson, data = filter(moss, subsite == 'NAKVAKWET'))
 check_overdispersion(wet_moss_p_mod)
 check_zeroinflation(wet_moss_p_mod) #small absolute difference in zeros
 
 wet_moss_nb_mod <- glmmTMB(encounters ~ treatment*year_scale
-                             + (1|plot) + (1|year_scale), ziformula = ~0,
+                             + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
                              family = nbinom1, data = filter(moss, subsite == 'NAKVAKWET'))
 
 check_overdispersion(wet_moss_nb_mod)
@@ -337,7 +338,6 @@ check_zeroinflation(wet_moss_nb_mod)
 AICtab(wet_moss_p_mod, wet_moss_nb_mod)
 summary(wet_moss_nb_mod)
 
-sjPlot::plot_model(dry_moss_zanb_mod, type = 'int', terms = '')
 sjPlot::plot_model(wet_moss_nb_mod, type = 'int', terms = 'year_scale')
 
 #FORB ----
@@ -358,14 +358,14 @@ summary(forb_subsite_mod)
 
 #DRY - FORB
 dry_forb_p_mod <- glmmTMB(encounters ~ treatment*year_scale
-                             + (1|plot) + (1|year_scale), ziformula = ~0,
+                             + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
                              family = poisson, data = filter(forb, subsite == 'NAKVAKDRY'))
 
 check_overdispersion(dry_forb_p_mod)
 check_zeroinflation(dry_forb_p_mod) #small zero inflation possibility
 
 dry_forb_zap_mod <- glmmTMB(encounters ~ treatment*year_scale
-                            + (1|plot) + (1|year_scale), ziformula = ~1,
+                            + (1|plot_pair/plot) + (1|year_scale), ziformula = ~1,
                             family = truncated_poisson, data = filter(forb, subsite == 'NAKVAKDRY'))
 
 check_overdispersion(dry_forb_zap_mod)
@@ -377,27 +377,27 @@ summary(dry_forb_p_mod)
 
 #WET - FORB
 wet_forb_p_mod <- glmmTMB(encounters ~ treatment*year_scale
-                             + (1|plot) + (1|year_scale), ziformula = ~0,
+                             + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
                              family = poisson, data = filter(forb, subsite == 'NAKVAKWET'))
 check_overdispersion(wet_forb_p_mod)
 check_zeroinflation(wet_forb_p_mod) #small absolute difference in zeros
 
 wet_forb_zap_mod <- glmmTMB(encounters ~ treatment*year_scale
-                                  + (1|plot) + (1|year_scale), ziformula = ~1,
+                                  + (1|plot_pair/plot) + (1|year_scale), ziformula = ~1,
                                   family = truncated_poisson, data = filter(forb, subsite == 'NAKVAKWET'))
 
 check_overdispersion(wet_forb_zap_mod)#doesn't fix dispersion
 check_zeroinflation(wet_forb_zap_mod)#doesn't fix inflation
 
 wet_forb_nb_mod <- glmmTMB(encounters ~ treatment*year_scale
-                               + (1|plot) + (1|year_scale), ziformula = ~0,
+                               + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
                                family = nbinom1, data = filter(forb, subsite == 'NAKVAKWET'))
 
 check_overdispersion(wet_forb_nb_mod)
 check_zeroinflation(wet_forb_nb_mod) #check 0 inflated model
 
 wet_forb_zanb_mod <- glmmTMB(encounters ~ treatment*year_scale
-                               + (1|plot) + (1|year_scale), ziformula = ~1,
+                               + (1|plot_pair/plot) + (1|year_scale), ziformula = ~1,
                                family = truncated_nbinom1, data = filter(forb, subsite == 'NAKVAKWET'))
 
 check_zeroinflation(wet_forb_zanb_mod)
@@ -406,8 +406,8 @@ AICtab(wet_forb_p_mod, wet_forb_nb_mod,
        wet_forb_zap_mod, wet_forb_zanb_mod)
 
 summary(wet_forb_zanb_mod)
-
-sjPlot::plot_model(dry_forb, type = 'int', terms = '')
+summary(wet_forb_nb_mod)
+sjPlot::plot_model(dry_forb_p_mod, type = 'int', terms = '')
 sjPlot::plot_model(wet_forb_zanb_mod)
 
 #SEVER 
@@ -427,28 +427,28 @@ summary(sever_subsite_mod)
 
 #DRY - SEVER
 dry_sever_p_mod <- glmmTMB(encounters ~ treatment*year_scale
-                          + (1|plot) + (1|year_scale), ziformula = ~0,
+                          + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
                           family = poisson, data = filter(sever, subsite == 'NAKVAKDRY'))
 
 check_overdispersion(dry_sever_p_mod)
 check_zeroinflation(dry_sever_p_mod) 
 
 dry_sever_zap_mod <- glmmTMB(encounters ~ treatment*year_scale
-                           + (1|plot) + (1|year_scale), ziformula = ~1,
+                           + (1|plot_pair/plot) + (1|year_scale), ziformula = ~1,
                            family = truncated_poisson, data = filter(sever, subsite == 'NAKVAKDRY'))
 
 check_overdispersion(dry_sever_zap_mod)
 check_zeroinflation(dry_sever_zap_mod) #small zero inflation possibility
 
 dry_sever_nb_mod <- glmmTMB(encounters ~ treatment*year_scale
-                             + (1|plot) + (1|year_scale), ziformula = ~0,
+                             + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
                              family = nbinom1, data = filter(sever, subsite == 'NAKVAKDRY'))
 
 check_overdispersion(dry_sever_nb_mod)
 check_zeroinflation(dry_sever_nb_mod) #small zero inflation possibility
 
 dry_sever_zanb_mod <- glmmTMB(encounters ~ treatment*year_scale
-                            + (1|plot) + (1|year_scale), ziformula = ~1,
+                            + (1|plot_pair/plot) + (1|year_scale), ziformula = ~1,
                             family = truncated_nbinom1, data = filter(sever, subsite == 'NAKVAKDRY'))
 
 check_overdispersion(dry_sever_zanb_mod)
@@ -458,32 +458,34 @@ AICtab(dry_sever_p_mod, dry_sever_nb_mod,
        dry_sever_zap_mod, dry_sever_zanb_mod)
 
 summary(dry_sever_nb_mod)
+summary(dry_sever_zanb_mod)
 sjPlot::plot_model(dry_sever_nb_mod, type = 'int')
+sjPlot::plot_model(dry_sever_zanb_mod, type = 'int')
 
 #WET - SEVER
 wet_sever_p_mod <- glmmTMB(encounters ~ treatment*year_scale
-                            + (1|plot) + (1|year_scale), ziformula = ~0,
+                            + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
                             family = poisson, data = filter(sever, subsite == 'NAKVAKWET'))
 
 check_overdispersion(wet_sever_p_mod)
 check_zeroinflation(wet_sever_p_mod) #small zero inflation possibility
 
 wet_sever_zap_mod <- glmmTMB(encounters ~ treatment*year_scale
-                             + (1|plot) + (1|year_scale), ziformula = ~1,
+                             + (1|plot_pair/plot) + (1|year_scale), ziformula = ~1,
                              family = truncated_poisson, data = filter(sever, subsite == 'NAKVAKWET'))
 
 check_overdispersion(wet_sever_zap_mod) #improved dispersion
 check_zeroinflation(wet_sever_zap_mod) #A bit worse zero modelling
 
 wet_sever_nb_mod <- glmmTMB(encounters ~ treatment*year_scale
-                             + (1|plot) + (1|year_scale), ziformula = ~0,
+                             + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
                              family = nbinom1, data = filter(sever, subsite == 'NAKVAKWET'))
 
 check_overdispersion(wet_sever_nb_mod) #improved dispersion
 check_zeroinflation(wet_sever_nb_mod) #A bit worse zero modelling
 
 wet_sever_zanb_mod <- glmmTMB(encounters ~ treatment*year_scale
-                            + (1|plot) + (1|year_scale), ziformula = ~1,
+                            + (1|plot_pair/plot) + (1|year_scale), ziformula = ~1,
                             family = truncated_nbinom1, data = filter(sever, subsite == 'NAKVAKWET'))
 
 check_overdispersion(wet_sever_zanb_mod) #improved dispersion
