@@ -97,8 +97,89 @@ ground_hourly <- ground_hourly %>%
          subsite = substr(plot, 10,12),
          treatment = substr(plot, 6,8))
 
+test <- ground_hourly %>%
+  mutate(short_date = as_date(date)) %>%
+  group_by(plot, short_date) %>%
+  #complete(year, subsite, treatment) %>%
+  summarise(n_obs = n(),
+            min_t_ground = min(t_ground),
+            max_t_ground = max(t_ground),
+            daily_t_var = max_t_ground-min_t_ground) %>%
+  filter(., n_obs == 24) %>%
+  mutate(year = substr(short_date, 1,4),
+         year_plot = paste(year, plot, sep = "_")) %>%
+  mutate(subsite = substr(year_plot, 15,17),
+       treatment = substr(year_plot, 11,13),
+       year = as.integer(substr(year_plot, 1,4)),
+       year_scale = scale(year),
+       plot = as.factor(substr(year_plot, 6,9)))
+
+ggplot(test, aes(x = short_date, y = daily_t_var, color = subsite))+
+  geom_line()+
+  facet_wrap(~as.factor(year), scales ="free_x")
+
+test_lt1 <- test %>%
+  filter(., month(short_date) <= 6 | month(short_date) >= 9)# %>%
+  mutate(day_lt1 = if_else(daily_t_var <= 1, 1, 0))
+
+ggplot(test_lt1, aes(x = short_date, y = day_lt1))+
+  geom_point()+
+  facet_wrap(~year, scales = "free_x")
 
 
+test2 <- test %>%
+  #filter(., month(short_date) <= 6 | month(short_date) >= 9) %>% #Dont need to filter bc var > 1 extremely infrequent
+  mutate(days_lt1 = if_else(daily_t_var <= 1, 1, 0)) %>%
+  group_by(year_plot) %>%
+  summarise(n_obs = sum(!is.na(days_lt1)),
+            freq_lt1 = sum(days_lt1, na.rm = TRUE)) %>%
+  filter(., n_obs >= 360) %>%
+  #drop_na() %>%
+  mutate(subsite = substr(year_plot, 15,17),
+         treatment = substr(year_plot, 11,13),
+         year = as.integer(substr(year_plot, 1,4)),
+         year_scale = scale(year),
+         plot = as.factor(substr(year_plot, 6,9)))
 
 
+ggplot(test2, aes(x = as.factor(year), y = freq_lt1, fill = treatment))+
+  geom_boxplot()+
+  facet_wrap(~subsite)
+
+#library(glmmTMB)
+z<-filter(test2, subsite == 'Dry' & year > 2011)
+mod <- glmmTMB(freq_lt1 ~ treatment + year_scale + (1|plot) + (1|year_scale), 
+        family = nbinom1,
+        data = z)
+summary(mod)
+check_model(mod) 
+
+#OTC may have some influence on reducing the number of snow covered days at dry sites
+#Since it's CTL that has more snow days than OTC, doesn't seem to be trapping but rather longer 
+#longer snow-free season caused by warmer temps 
+
+#Looking at temp diffs between pairs of OTC and CTL
+ground_otc_ctl <- ground %>%
+  mutate(plot_num = substr(plot, 3, 4)) %>%
+  select(-plot)
+
+ggplot(ground_otc_ctl, aes(x = date, y = t_ground, color = treatment))+
+  geom_line()+
+  facet_wrap(~subsite)
+
+
+x <- pivot_wider(ground_otc_ctl, names_from = treatment, values_from = t_ground) %>%
+  mutate(diff_otc_ctl = OTC-CTL)
+
+ggplot(x, aes(x = date, y = diff_otc_ctl, color = subsite))+
+  geom_line(alpha = 0.7)
+
+x2 <- x %>%
+  group_by(date, subsite) %>%
+  summarise(mean_diff = mean(diff_otc_ctl, na.rm = TRUE)) %>%
+  mutate(year = substr(date, 1,4))
+
+ggplot(x2, aes(x = date, y = mean_diff, color = subsite))+
+  geom_line()+
+  facet_wrap(~as.factor(year), scales ="free_x")
   
