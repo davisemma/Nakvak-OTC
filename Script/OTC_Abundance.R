@@ -21,7 +21,8 @@ holders <- read.csv("Point Frame/plot_year_genus.csv") #file with all lifeform x
 
 #FROMAT DATA ----
 #Calculate n encounters for each lifeform x plot
-encounters <- data %>%
+encounters <- data %>% #ADD: FILTER STATUS == LIVE
+  filter(., status == 'LIVE') %>%
   group_by(subsite, treatment, plot, year, lifeform) %>%
   summarise(encounters = n()) 
 
@@ -123,7 +124,7 @@ sjPlot::plot_model(wet_gram_nb_mod)
 #LICHEN ----
 #Plot of the distribution of observations
 ggplot(lichen, aes(x = encounters, fill = treatment)) +
-  geom_histogram(position = "identity", alpha = 0.7, binwidth = 10)+
+  geom_histogram(position = "identity", alpha = 0.7, binwidth = 1)+
   facet_grid(year~subsite)+
   theme_bw()
 
@@ -188,7 +189,7 @@ wet_lichen_zinb_mod <- glmmTMB(encounters ~ treatment*year_scale
 
 AICtab(wet_lichen_p_mod, wet_lichen_nb_mod,
        wet_lichen_zap_mod, wet_lichen_zinb_mod) #
-summary(wet_lichen_p_mod) 
+summary(wet_lichen_zap_mod) 
 
 sjPlot::plot_model(wet_lichen_p_mod, type = 'int')
 #Overall, wet lichen model is probably not great because so few observations overall
