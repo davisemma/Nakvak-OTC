@@ -13,8 +13,8 @@ library(performance)
 library(bbmle)
 
 #READ DATA ----
-data <- read.csv("plot_data.csv") 
-holders <- read.csv("plot_year_genus.csv") #file with all lifeform x plot combinations
+data <- read.csv("Point Frame/plot_data.csv") 
+holders <- read.csv("Point Frame/plot_year_genus.csv") #file with all lifeform x plot combinations
 
 #FROMAT DATA ----
 #Calculate n encounters for each lifeform x plot
@@ -58,14 +58,14 @@ summary(gram_subsite_mod)
 
 #DRY - GRAM
 dry_gram_mod <- glmmTMB(max_height ~ treatment*year_scale
-                        + (1|plot) + (1|year_scale),
+                        + (1|plot_pair/plot) + (1|year_scale),
                         family = gaussian, data = filter(gram, subsite == 'NAKVAKDRY'))
 summary(dry_gram_mod)
 check_model(dry_gram_mod)
 
 #WET - GRAM
 wet_gram_mod <- glmmTMB(max_height ~ treatment*year_scale
-                        + (1|plot) + (1|year_scale),
+                        + (1|plot_pair/plot) + (1|year_scale),
                         family = gaussian, data = filter(gram, subsite == 'NAKVAKWET'))
 summary(wet_gram_mod)
 check_model(wet_gram_mod)
@@ -89,14 +89,15 @@ summary(sdeci_subsite_mod)
 
 #DRY - SDECI
 dry_sdeci_mod <- glmmTMB(max_height ~ treatment*year_scale
-                         + (1|plot) + (1|year_scale),
+                         + (1|plot_pair/plot) + (1|year_scale),
                          family = gaussian, data = filter(sdeci, subsite == 'NAKVAKDRY'))
 summary(dry_sdeci_mod)
 check_model(dry_sdeci_mod)
 sjPlot::plot_model(dry_sdeci_mod)
+sjPlot::plot_model(dry_sdeci_mod, type = "int")
 #WET - SDECI
 wet_sdeci_mod <- glmmTMB(max_height ~ treatment*year_scale
-                         + (1|plot) + (1|year_scale),
+                         + (1|plot_pair/plot) + (1|year_scale),
                          family = gaussian, data = filter(sdeci, subsite == 'NAKVAKWET'))
 summary(wet_sdeci_mod)
 check_model(wet_sdeci_mod)
@@ -119,14 +120,14 @@ summary(sever_subsite_mod)
 
 #DRY - SEVER
 dry_sever_mod <- glmmTMB(max_height ~ treatment*year_scale
-                         + (1|plot) + (1|year_scale),
+                         + (1|plot_pair/plot) + (1|year_scale),
                          family = gaussian, data = filter(sever, subsite == 'NAKVAKDRY'))
 summary(dry_sever_mod)
 check_model(dry_sever_mod)
 sjPlot::plot_model(dry_sever_mod)
 #WET - SEVER
 wet_sever_mod <- glmmTMB(max_height ~ treatment*year_scale
-                         + (1|plot) + (1|year_scale),
+                         + (1|plot_pair/plot) + (1|year_scale),
                          family = gaussian, data = filter(sever, subsite == 'NAKVAKWET'))
 summary(wet_sever_mod)
 check_model(wet_sever_mod)
@@ -148,7 +149,7 @@ summary(forb_subsite_mod)
 
 #DRY - FORB
 dry_forb_mod <- glmmTMB(max_height ~ treatment*year_scale
-                         + (1|plot) + (1|year_scale),
+                         + (1|plot_pair/plot) + (1|year_scale),
                          family = gaussian, data = filter(forb, subsite == 'NAKVAKDRY'))
 summary(dry_forb_mod)
 check_model(dry_forb_mod)
@@ -156,7 +157,7 @@ sjPlot::plot_model(dry_forb_mod)
 
 #WET - FORB
 wet_forb_mod <- glmmTMB(max_height ~ treatment*year_scale
-                         + (1|plot) + (1|year_scale),
+                         + (1|plot_pair/plot) + (1|year_scale),
                          family = gaussian, data = filter(forb, subsite == 'NAKVAKWET'))
 summary(wet_forb_mod)
 check_model(wet_forb_mod)
