@@ -1,5 +1,6 @@
 library("vegan")
 library("ggplot2")
+library("ggsci")
 
 #READ DATA ----
 data <- read.csv("Point Frame/plot_data.csv") 
@@ -33,6 +34,7 @@ chr_dat <- encounters_wide[,1:5]
 #ordination by NMDS
 NMDS <- metaMDS(life_dat)
 NMDS
+stressplot(NMDS)
 
 #########################
 #Data visualisation (THIS IS AN UPDATED VERSION OF THE SCRIPT, NOW USING GGPLOT)
@@ -46,12 +48,14 @@ labels <- scores(NMDS)$species %>%
   as_tibble(rownames = "lifeform")
   
 
-x <- ggplot(plot_dat, aes(x=NMDS1, y=NMDS2, color = subsite, fill = subsite)) +
-  stat_ellipse(level = 0.5, geom = "polygon", alpha = 0.4)+
+x <- ggplot(plot_dat, aes(x=NMDS1, y=NMDS2, , color = treatment, fill = treatment)) +
+  stat_ellipse(level = 0.75, geom = "polygon", alpha = 0.4)+
   geom_point()+
+  theme_bw()+
+  scale_color_npg()+
   facet_wrap(~year)
-  
 x
+x+geom_text(data=labels, aes(x = NMDS1, y = NMDS2, label = lifeform), hjust = 0.5,  vjust = 0.5,position = position_fill(vjust = 0.5))
 x + geom_text(aes(label = lifeform), data = labels)
 
 
