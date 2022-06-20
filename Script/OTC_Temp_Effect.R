@@ -26,7 +26,7 @@ ground <- ground %>%
          treatment = substr(plot, 6,8))
 
 #Read in AIR TEMPS
-air <- read_csv("OTC Temp Effect/Air/NAKVAK_DAILY_SAT_INTERP.csv")
+air <- read_csv("OTC Temp Effect/Air/ERA5_daily_air_2010_2022.csv")
 names(air) <- c("date", "t_air")
 air <- air %>%
   mutate(year = as.integer(substr(date, 1, 4)))
@@ -45,8 +45,8 @@ ggplot(ground_air_merge, aes(x = year, y = diff_sa, color = treatment))+
 ground_air_summary <- ground_air_merge %>%
   group_by(plot, year, subsite, treatment) %>%
   summarise(n_obs = n(),
-            mean_diff_sa = mean(diff_sa)) %>% #On average, how much warmer is ground than air in the summer?
-  mutate(plot_num = substr(plot, 3, 4)) %>%
+            mean_diff_sa = mean(diff_sa))# %>% #On average, how much warmer is ground than air in the summer?
+  mutate(plot_num = substr(plot, 3, 4))# %>%
   filter(., n_obs > 90) #Select plots with full obs only 
 
 ggplot(ground_air_summary, aes(x = year, y = mean_diff_sa, color = treatment))+
@@ -55,7 +55,7 @@ ggplot(ground_air_summary, aes(x = year, y = mean_diff_sa, color = treatment))+
   geom_smooth(alpha = 0.2)+
   theme_bw()+
   scale_color_manual(values = c("hot pink", "blue"))+
-  scale_x_continuous(breaks = c(2012, 2014, 2016, 2018, 2020))+
+  scale_x_continuous(breaks = c(2012, 2014, 2016, 2018, 2020, 2022))+
   facet_wrap(~subsite)+
   ylab('Seasonal average of (Tground - Tair)')+
   ggtitle('How much warmer (+) or cooler (-) is ground than air in summer?')
@@ -72,7 +72,7 @@ ggplot(ga_wide, aes(x = as.integer(year), y = diff_otc_ctl, color = subsite))+
   geom_smooth(alpha = 0.2)+
   theme_bw()+
   scale_color_manual(values = c("coral", "cornflower blue"))+
-  scale_x_continuous(breaks = c(2012, 2014, 2016, 2018, 2020))+
+  scale_x_continuous(breaks = c(2012, 2014, 2016, 2018, 2020, 2022))+
   ylab('OTC(offset) - CTL(offset)')+
   ggtitle('How much warmer are OTC ground temps (than the air) than CTL?')
 
