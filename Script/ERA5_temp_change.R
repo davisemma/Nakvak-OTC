@@ -2,6 +2,7 @@ rm(list=ls())
 library(tidyverse)
 library(tidylog)
 library(lubridate)
+library('ggthemes')
 
 setwd("Data")
 
@@ -37,17 +38,19 @@ max_temp <- read_csv("Air Temperature/ERA5_max_2m_temperature_monthly.csv")%>%
          plot_order = month(full_date))
 
 
-ggplot(mean_temp, aes(x = year, y = temp_c, color = month))+
+ggplot(mean_temp, aes(x = year, y = mean_temp_c))+
   geom_rect(
-    fill = "yellow", color = NA, alpha = 0.01, ,
+    fill = "lightblue", color = NA, alpha = 0.01,
     xmin = 2008,
     xmax = 2021,
     ymin = -Inf,
     ymax = Inf)+
-  geom_line()+
-  geom_smooth()+
-  theme_bw()+
-  facet_wrap(~month, scales = "free_y")
+  geom_smooth(size = 0.3, alpha = 0.2, fill = 'purple', color = 'red')+
+  geom_line(size = 0.3)+
+  theme_few()+
+  facet_wrap(~month, scales = "free_y")+
+  ylab('Mean temperature (°C)')+
+  xlab('Year')
 
 ggplot(min_temp, aes(x = year, y = min_temp_c, color = month))+
   geom_rect(
