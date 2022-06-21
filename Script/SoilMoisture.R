@@ -1,45 +1,57 @@
-#Code to plot formatted soil moisture data - 2009 to 2013
-#LAST UPDATE: April 27, 2020
+library(ggpubr)
+#Code to plot formatted soil moisture data 
 rm(list = ls())
 
-setwd("~/Desktop/Labrador Project/Nakvak Soil Moisture")
-soil_moisture <- read_csv("Nakvak_SoilMoisture_Formatted.csv")
-soil_moisture$Subsite <-  ordered(soil_moisture$Subsite, levels = c("Wet", "Dry"))
+soil_moisture <- read_csv("Soil Moisture/Torngat_2021_TempSoil_DATA_FORMATTED.csv") %>%
+  filter(!is.na(treatment))
+soil_moisture$Subsite <-  ordered(soil_moisture$subsite, levels = c("Wet", "Dry"))
 
 moisture_summary <- soil_moisture %>%
-  group_by(Site, Year, Subsite, Treatment, PlotID) %>%
-  summarise(MeanMoist = mean(Moisture, na.rm = TRUE))
+  group_by(site, year, subsite, treatment, plot) %>%
+  summarise(mean_moisture = mean(moisture, na.rm = TRUE))
 
 n_obs <- moisture_summary %>%
-  group_by(Site, Year, Subsite, Treatment) %>%
+  filter(!is.nan(mean_moisture)) %>%
+  group_by(site, year, subsite, treatment) %>%
   summarise(Obs = n())
 
-ggplot(moisture_summary, aes(x = factor(Year), y = MeanMoist, fill = Subsite))+
+ggplot(moisture_summary, aes(x = factor(year), y = mean_moisture, fill = subsite))+
   geom_boxplot(size = .3, outlier.size = 0.75)+
   theme_pubr(base_size = 10, legend = 'bottom')+
   theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   scale_fill_jco(alpha = 0.8)+
   labs(y = 'Percent soil moisture',
-       x = 'Year')
+       x = 'Year')+
+  facet_wrap(~treatment)
 
 #4x4
-moisture_summary$PlotID = factor(moisture_summary$PlotID)
-moisture_summary$Subsite = factor(moisture_summary$Subsite)
-moisture_summary$Year = factor(moisture_summary$Year)
-moisture.mod <- lmer(MeanMoist ~ Subsite*Year + (1|PlotID), data = moisture_summary)
-summary(moisture.mod)
-plot(moisture.mod)
-qqnorm(resid(moisture.mod))
-qqline(resid(moisture.mod))
+model_dat <- moisture_summary %>%
+  ungroup()%>%
+  mutate(plot_pair = factor(paste(treatment,plot, sep = "")),
+         plot = factor(plot),
+         subsite = factor(subsite),
+         treament = factor(treatment),
+         year_scale = as.numeric(scale(year)))
 
-moist.con <- emmeans(moisture.mod , ~Year|Subsite)
-contrast(moist.con, "poly", "tukey")  
+wet_moisture <- glmmTMB(mean_moisture ~ treatment*year_scale
+                        + (1|plot_pair/plot) + (1|year_scale),
+                        family = gaussian, data = filter(model_dat, subsite == 'Wet'))
 
+summary(wet_moisture)
+check_model(wet_moisture)
 
-#
-ggplot(moisture_summary, aes(x = Year, y = MeanMoist, colour = Subsite))+
-  geom_point()
+dry_moisture <- glmmTMB(mean_moisture ~ treatment*year_scale
+                        + (1|plot_pair/plot) + (1|year_scale),
+                        family = gaussian, data = filter(model_dat, subsite == 'Dry'))
 
+summary(dry_moisture)
+check_model(dry_moisture)
+
+sjPlot::plot_model(wet_moisture)
+sjPlot::plot_model(wet_moisture, type = "int")
+
+sjPlot::plot_model(dry_moisture)
+sjPlot::plot_model(dry_moisture, type = "int")
 
 
 
