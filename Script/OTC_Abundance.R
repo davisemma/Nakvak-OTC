@@ -17,24 +17,24 @@ library(bbmle)
 getwd()
 #READ DATA ----
 data <- read.csv("Point Frame/plot_data.csv") 
-holders <- read.csv("Point Frame/plot_year_genus.csv") #file with all lifeform x plot combinations
+holders <- read.csv("Point Frame/plot_year_genus_fin.csv") #file with all lifeform x plot combinations
 
 #FROMAT DATA ----
 #Calculate n encounters for each lifeform x plot
-encounters <- data %>% #ADD: FILTER STATUS == LIVE
-  filter(., status == 'LIVE') %>%
+encounters <- data %>% 
+  filter(., status == 'LIVE') %>% #select only 'live' encounters
   group_by(subsite, treatment, plot, year, lifeform) %>%
-  summarise(encounters = n()) 
+  summarise(encounters = n()) #number of encounters of each lifeform in each plot
 
 #Merge encounters with placeholder file, replace 'NA' with '0', format
-encounters_merge <- merge(encounters, holders, all.y = TRUE) %>%
-  mutate(encounters = replace_na(encounters, 0),
+encounters_merge <- merge(encounters, holders, all.y = TRUE) %>% #merge w 'holders' so that all combinations are represented ('0's are meaningful and should be included)
+  mutate(encounters = replace_na(encounters, 0), #NA changed to '0'
          subsite = as.factor(subsite), 
          plot_pair = substr(plot,1,nchar(plot)-1),
          plot = as.factor(plot),
          treatment = as.factor(treatment),
          lifeform = as.factor(lifeform),
-         year_scale = scale(year)) #converted to z-score for modelling
+         year_scale = scale(year)) #converted year to z-score for modelling
 
 #Create a dataframe for each lifeform
 gram <- filter(encounters_merge, lifeform == 'GRAM')
@@ -65,7 +65,7 @@ summary(gram_subsite_mod)
 
 #DRY - GRAM
 dry_gram_p_mod <- glmmTMB(encounters ~ treatment*year_scale
-                   + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0, #plot pair 
+                   + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
                    family = poisson, data = filter(gram, subsite == 'NAKVAKDRY'))
 
 check_zeroinflation(dry_gram_p_mod)
@@ -102,7 +102,7 @@ wet_gram_p_mod <- glmmTMB(encounters ~ treatment*year_scale
                    + (1|plot_pair/plot) + (1|year_scale),
                    family = poisson, data = filter(gram, subsite == 'NAKVAKWET'))
 
-check_zeroinflation(wet_gram_p_mod)
+check_zeroinflation(wet_gram_p_mod) #no zeros 
 check_overdispersion(wet_gram_p_mod)
 #No indication of zero inflation in wet data, so choose between poiss and nbino
 
