@@ -26,7 +26,7 @@ ground <- ground %>%
          treatment = substr(plot, 6,8))
 
 #Read in AIR TEMPS
-air <- read_csv("OTC Temp Effect/Air/ERA5_daily_air_2010_2022.csv")
+air <- read_csv("OTC Temp Effect/Air/ERA5_daily_air_2010_2021.csv")
 names(air) <- c("date", "t_air")
 air <- air %>%
   mutate(year = as.integer(substr(date, 1, 4)))
@@ -43,11 +43,12 @@ ggplot(ground_air_merge, aes(x = year, y = diff_sa, color = treatment))+
   ylim(-2,2)
 
 ground_air_summary <- ground_air_merge %>%
+  filter(!is.na(diff_sa)) %>%
   group_by(plot, year, subsite, treatment) %>%
   summarise(n_obs = n(),
-            mean_diff_sa = mean(diff_sa))# %>% #On average, how much warmer is ground than air in the summer?
-  mutate(plot_num = substr(plot, 3, 4))# %>%
-  filter(., n_obs > 90) #Select plots with full obs only 
+            mean_diff_sa = mean(diff_sa)) %>% #On average, how much warmer is ground than air in the summer?
+  mutate(plot_num = substr(plot, 3, 4)) %>%
+  filter(., n_obs > 85) #Select plots with > 90% data avail
 
 ggplot(ground_air_summary, aes(x = year, y = mean_diff_sa, color = treatment))+
   geom_hline(yintercept = 0, color = 'dark grey')+
@@ -74,6 +75,7 @@ ggplot(ga_wide, aes(x = as.integer(year), y = diff_otc_ctl, color = subsite))+
   scale_color_manual(values = c("coral", "cornflower blue"))+
   scale_x_continuous(breaks = c(2012, 2014, 2016, 2018, 2020, 2022))+
   ylab('OTC(offset) - CTL(offset)')+
+  xlab('Year')+
   ggtitle('How much warmer are OTC ground temps (than the air) than CTL?')
 
 #1. The difference in OTC and CTL is relatively constant over time, with offset of ~0.75
@@ -119,7 +121,7 @@ ggplot(test, aes(x = short_date, y = daily_t_var, color = subsite))+
   facet_wrap(~as.factor(year), scales ="free_x")
 
 test_lt1 <- test %>%
-  filter(., month(short_date) <= 6 | month(short_date) >= 9)# %>%
+  filter(., month(short_date) <= 6 | month(short_date) >= 9) %>%
   mutate(day_lt1 = if_else(daily_t_var <= 1, 1, 0))
 
 ggplot(test_lt1, aes(x = short_date, y = day_lt1))+
@@ -142,17 +144,30 @@ test2 <- test %>%
          plot = as.factor(substr(year_plot, 6,9)))
 
 
-ggplot(test2, aes(x = as.factor(year), y = freq_lt1, fill = treatment))+
+ggplot(test2, aes(x = as.factor(year), y = freq_lt1, fill = treatment, alpha = 0.5))+
   geom_boxplot()+
-  facet_wrap(~subsite)
+  theme_pubr()+
+  facet_wrap(~subsite)+
+  scale_fill_manual(values = c("coral", "cornflower blue"))+
+  ylab("#Days Tvar < 1°C")+
+  xlab("Year")
+
 
 #library(glmmTMB)
-z<-filter(test2, subsite == 'Dry' & year > 2011)
-mod <- glmmTMB(freq_lt1 ~ treatment + year_scale + (1|plot) + (1|year_scale), 
+dry_dat<-filter(test2, subsite == 'Dry' & year > 2011)
+dry_sno_mod <- glmmTMB(freq_lt1 ~ treatment + year_scale + (1|plot) + (1|year_scale), 
         family = nbinom1,
-        data = z)
-summary(mod)
-check_model(mod) 
+        data = dry_dat)
+summary(dry_sno_mod)
+check_model(dry_sno_mod) 
+
+wet_dat<-filter(test2, subsite == 'Dry' & year > 2011)
+wet_sno_mod <- glmmTMB(freq_lt1 ~ treatment + year_scale + (1|plot) + (1|year_scale), 
+               family = nbinom1,
+               data = wet_dat)
+summary(wet_sno_mod)
+check_model(wet_sno_mod) 
+
 
 #OTC may have some influence on reducing the number of snow covered days at dry sites
 #Since it's CTL that has more snow days than OTC, doesn't seem to be trapping but rather longer 

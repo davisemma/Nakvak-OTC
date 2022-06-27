@@ -144,13 +144,7 @@ dry_lichen_p_mod <- glmmTMB(encounters ~ treatment*year_scale
                              family = poisson, data = filter(lichen, subsite == 'NAKVAKDRY'))
 
 check_overdispersion(dry_lichen_p_mod)
-check_zeroinflation(dry_lichen_p_mod) 
-#overdispersion detected; zero inflation not a big issue but will evaluate ZAP
-dry_lichen_zap_mod<- glmmTMB(encounters ~ treatment*year_scale
-                            + (1|plot_pair/plot) + (1|year_scale), ziformula = ~1,
-                            family = truncated_poisson, data = filter(lichen, subsite == 'NAKVAKDRY'))
-
-check_zeroinflation(dry_lichen_zap_mod) #No improvement, and doesn't look inflated anyway
+check_zeroinflation(dry_lichen_p_mod) #No zeros observed 
 
 dry_lichen_nb_mod<- glmmTMB(encounters ~ treatment*year_scale
                                + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
@@ -189,7 +183,7 @@ wet_lichen_zinb_mod <- glmmTMB(encounters ~ treatment*year_scale
 
 AICtab(wet_lichen_p_mod, wet_lichen_nb_mod,
        wet_lichen_zap_mod, wet_lichen_zinb_mod) #
-summary(wet_lichen_zap_mod) 
+summary(wet_lichen_p_mod) 
 
 sjPlot::plot_model(wet_lichen_p_mod, type = 'int')
 #Overall, wet lichen model is probably not great because so few observations overall
@@ -232,8 +226,8 @@ dry_sdeci_p_mod <- glmmTMB(encounters ~ treatment*year_scale
                             + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
                             family = poisson, data = filter(sdeci, subsite == 'NAKVAKDRY'))
 
-check_overdispersion(dry_sdeci_p_mod)
-check_zeroinflation(dry_sdeci_p_mod) #weak underfitting of zeros
+check_overdispersion(dry_sdeci_p_mod) #Not really overdispersed
+check_zeroinflation(dry_sdeci_p_mod) #No zeros
 
 dry_sdeci_nb_mod <- glmmTMB(encounters ~ treatment*year_scale
                            + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
@@ -242,15 +236,9 @@ dry_sdeci_nb_mod <- glmmTMB(encounters ~ treatment*year_scale
 check_overdispersion(dry_sdeci_nb_mod)
 check_zeroinflation(dry_sdeci_nb_mod) #weak underfitting of zeros
 
-#Check if 0-inflation is really needed
-dry_sdeci_zanb_mod <- glmmTMB(encounters ~ treatment*year_scale
-                           + (1|plot_pair/plot) + (1|year_scale), ziformula = ~1,
-                           family = truncated_nbinom1, data = filter(sdeci, subsite == 'NAKVAKDRY'))
+AICtab(dry_sdeci_p_mod, dry_sdeci_nb_mod)
 
-check_overdispersion(dry_sdeci_zanb_mod)
-check_zeroinflation(dry_sdeci_zanb_mod) #Now greatly over-fitting zeros
-
-summary(dry_sdeci_nb_mod)
+summary(dry_sdeci_p_mod)
 
 #SDECI - WET
 wet_sdeci_p_mod <- glmmTMB(encounters ~ treatment*year_scale
@@ -320,8 +308,8 @@ check_zeroinflation(dry_moss_zanb_mod)
 AICtab(dry_moss_p_mod, dry_moss_nb_mod,
        dry_moss_zap_mod, dry_moss_zanb_mod)
 
-summary(dry_moss_zanb_mod)
-sjPlot::plot_model(dry_moss_zanb_mod, type = "int")
+summary(dry_moss_nb_mod)
+sjPlot::plot_model(dry_moss_nb_mod, type = "int")
 #WET - MOSS
 wet_moss_p_mod <- glmmTMB(encounters ~ treatment*year_scale
                                  + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
@@ -407,14 +395,14 @@ AICtab(wet_forb_p_mod, wet_forb_nb_mod,
        wet_forb_zap_mod, wet_forb_zanb_mod)
 
 summary(wet_forb_zanb_mod)
-summary(wet_forb_nb_mod)
-sjPlot::plot_model(dry_forb_p_mod, type = 'int', terms = '')
 sjPlot::plot_model(wet_forb_zanb_mod)
+sjPlot::plot_model(wet_forb_zanb_mod, type = "int")
+
 
 #SEVER 
 #Plot of the distribution of observations
 ggplot(sever, aes(x = encounters, fill = treatment)) +
-  geom_histogram(position = "identity", alpha = 0.7, binwidth = 10)+
+  geom_histogram(position = "identity", alpha = 0.7, binwidth = 1)+
   facet_grid(year~subsite)+
   theme_bw()
 
@@ -459,7 +447,7 @@ AICtab(dry_sever_p_mod, dry_sever_nb_mod,
        dry_sever_zap_mod, dry_sever_zanb_mod)
 
 summary(dry_sever_nb_mod)
-summary(dry_sever_zanb_mod)
+#summary(dry_sever_zanb_mod)
 sjPlot::plot_model(dry_sever_nb_mod, type = 'int')
 sjPlot::plot_model(dry_sever_zanb_mod, type = 'int')
 
@@ -493,9 +481,9 @@ check_overdispersion(wet_sever_zanb_mod) #improved dispersion
 check_zeroinflation(wet_sever_zanb_mod) #A bit worse zero modelling
 
 AICtab(wet_sever_p_mod, wet_sever_nb_mod,
-       wet_sever_zap_mod, wet_sever_zanb_mod)
+       wet_sever_zap_mod)
 
 summary(wet_sever_nb_mod)
-summary(wet_sever_zap_mod)
+
 
 #----END
