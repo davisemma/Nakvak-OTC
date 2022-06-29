@@ -6,9 +6,28 @@ library('ggthemes')
 
 setwd("Data")
 
+mean_temp <- read_csv("Air Temperature/NAK_monthly_mean_temp.csv") %>%
+  mutate(month_long = month(month, label = TRUE, abbr = FALSE))
+
+ggplot(mean_temp, aes(x = year, y = t_ave))+
+  geom_rect(
+    fill = "lightblue", color = NA, alpha = 0.01,
+    xmin = 2008,
+    xmax = 2021,
+    ymin = -Inf,
+    ymax = Inf)+
+  geom_smooth(size = 0.3, alpha = 0.2, fill = 'purple', color = 'red')+
+  geom_line(size = 0.3)+
+  theme_few()+
+  facet_wrap(~month_long, scales = "free_y")+
+  ylab('Mean temperature (°C)')+
+  xlab('Year')+
+  ggtitle("Mean monthly temperatures 1981 - 2021")
+
+###
 mean_temp <- read_csv("Air Temperature/ERA5_mean_2m_temperature_monthly.csv")%>%
   mutate(full_date = dmy(date),
-         month = factor(substr(date, 4,6), levels = 
+         month = factor(substr(date, 4,6), levels =
                           c("Jan", "Feb", "Mar",
                         "Apr", "May", "Jun",
                         "Jul", "Aug", "Sep",
@@ -37,20 +56,6 @@ max_temp <- read_csv("Air Temperature/ERA5_max_2m_temperature_monthly.csv")%>%
          year = as.numeric(substr(full_date, 1,4)),
          plot_order = month(full_date))
 
-
-ggplot(mean_temp, aes(x = year, y = mean_temp_c))+
-  geom_rect(
-    fill = "lightblue", color = NA, alpha = 0.01,
-    xmin = 2008,
-    xmax = 2021,
-    ymin = -Inf,
-    ymax = Inf)+
-  geom_smooth(size = 0.3, alpha = 0.2, fill = 'purple', color = 'red')+
-  geom_line(size = 0.3)+
-  theme_few()+
-  facet_wrap(~month, scales = "free_y")+
-  ylab('Mean temperature (°C)')+
-  xlab('Year')
 
 ggplot(min_temp, aes(x = year, y = min_temp_c, color = month))+
   geom_rect(

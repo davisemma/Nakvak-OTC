@@ -1,1 +1,4 @@
-
+NAKVAK_DAILY_SAT_INTERP.csv - data from Davis et al, 2021 paper
+ERA5_daily_air_2010_2021.csv - data from GEE and CDS from ERA grid cell
+NAK_2010_2021_RW.csv - data provided from Rob, ERA5 locally adjusted using model + thin-plate spline
+NAK_1981_2022_FIXED.xlsx - full dataset provided from Rob (June 2022)
