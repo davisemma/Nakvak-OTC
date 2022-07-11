@@ -1,5 +1,5 @@
 #Some data cleaning
-
+data <- read.csv("Point Frame/plot_data.csv") 
 test <- select(data, c('plot', 'year', 'y', 'x'))
 
 #Certain (~13) plots have <100 points of observation - 

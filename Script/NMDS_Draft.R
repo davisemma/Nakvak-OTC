@@ -3,7 +3,7 @@ library("ggplot2")
 library("ggsci")
 
 #READ DATA ----
-data <- read.csv("Point Frame/plot_data.csv") 
+data <- read.csv("Point Frame/plot_data_fin.csv") 
 holders <- read.csv("Point Frame/plot_year_genus_fin.csv") #file with all lifeform x plot combinations
 
 #FROMAT DATA ----
@@ -46,17 +46,50 @@ plot_dat <- (scores(NMDS)$sites) %>%
 
 labels <- scores(NMDS)$species %>%
   as_tibble(rownames = "lifeform")
+
   
 
-x <- ggplot(plot_dat, aes(x=NMDS1, y=NMDS2, , color = treatment, fill = treatment)) +
-  stat_ellipse(level = 0.75, geom = "polygon", alpha = 0.4)+
-  geom_point()+
-  theme_bw()+
-  scale_color_npg()+
-  facet_wrap(~year)
-x
-x+geom_text(data=labels, aes(x = NMDS1, y = NMDS2, label = lifeform), hjust = 0.5,  vjust = 0.5,position = position_fill(vjust = 0.5))
-x + geom_text(aes(label = lifeform), data = labels)
+nmds_plot <- ggplot()+
+  geom_point(data = plot_dat, aes(x=NMDS1, y=NMDS2, color = subsite, fill = subsite))+
+  stat_ellipse(data = plot_dat, aes(x=NMDS1, y=NMDS2, color = subsite, fill = subsite), level = 0.75, geom = "polygon", alpha = 0.4)+
+  theme_pubr()+
+  scale_color_manual(values = c('lightgoldenrod3','lightsteelblue3'),
+                     labels = c("Dry", "Wet"),
+                     name = 'Subsite')+
+  scale_fill_manual(values = c('lightgoldenrod3','lightsteelblue3'),
+                    labels = c("Dry", "Wet"),
+                    name = 'Subsite')+
+  facet_wrap(~year)+
+  ggtitle("NMDS of life form abundance") +
+  theme(plot.title = element_text(hjust = 0.5))+
+  theme(legend.position="right")+
+  geom_text(data=labels, aes(x = NMDS1, y = NMDS2, label = lifeform), 
+            hjust = 0.5,  vjust = 0.5,position = position_fill(vjust = 0.5), size = 2)
+  
+nmds_plot
+
+nmds_plot_all_yrs <- ggplot()+
+  geom_point(data = plot_dat, aes(x=NMDS1, y=NMDS2, color = subsite, 
+                                  fill = subsite, shape = as.factor(year)))+
+  stat_ellipse(data = plot_dat, aes(x=NMDS1, y=NMDS2, color = subsite, fill = subsite), level = 0.75, geom = "polygon", alpha = 0.4)+
+  theme_pubr()+
+  scale_shape_manual(values = c(15,16,17,18),
+                     name = 'Year')+
+  scale_color_manual(values = c('lightgoldenrod3','lightsteelblue3'),
+                     labels = c("Dry", "Wet"),
+                     name = 'Subsite')+
+  scale_fill_manual(values = c('lightgoldenrod3','lightsteelblue3'),
+                    labels = c("Dry", "Wet"),
+                    name = 'Subsite')+
+  #facet_wrap(~year)+
+  ggtitle("NMDS of life form abundance") +
+  theme(plot.title = element_text(hjust = 0.5))+
+  theme(legend.position="right")+
+  geom_text(data=labels, aes(x = NMDS1, y = NMDS2, label = lifeform), 
+            hjust = 0.5,  vjust = 0.5,position = position_fill(vjust = 0.5), size = 3)
+
+nmds_plot_all_yrs
+
 
 
 #####################
