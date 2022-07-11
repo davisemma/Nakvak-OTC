@@ -22,7 +22,8 @@ ggplot(mean_temp, aes(x = year, y = t_ave))+
   facet_wrap(~month_long, scales = "free_y")+
   ylab('Mean temperature (°C)')+
   xlab('Year')+
-  ggtitle("Mean monthly temperatures 1981 - 2021")
+  ggtitle("Mean monthly temperatures 1981 - 2021")+
+  theme(plot.title = element_text(hjust = 0.5))
 
 ###
 mean_temp <- read_csv("Air Temperature/ERA5_mean_2m_temperature_monthly.csv")%>%

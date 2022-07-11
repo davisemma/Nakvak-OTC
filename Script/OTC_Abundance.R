@@ -1,6 +1,6 @@
 #Script to test change in the abundance (total encounters per plot) 
 #of the various lifeforms.
-
+rm(list=ls())
 #Load packages ----
 library(dplyr)
 library(tidyr)
@@ -16,7 +16,7 @@ library(bbmle)
 
 getwd()
 #READ DATA ----
-data <- read.csv("Point Frame/plot_data.csv") 
+data <- read.csv("Point Frame/plot_data_fin.csv") 
 holders <- read.csv("Point Frame/plot_year_genus_fin.csv") #file with all lifeform x plot combinations
 
 #FROMAT DATA ----
@@ -148,8 +148,8 @@ check_zeroinflation(dry_lichen_p_mod) #No zeros observed
 
 dry_lichen_nb_mod<- glmmTMB(encounters ~ treatment*year_scale
                                + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
-                               family = nbinom1, data = filter(lichen, subsite == 'NAKVAKDRY'))
-
+                               family = nbinom2, data = filter(lichen, subsite == 'NAKVAKDRY'))
+#***Note: nbinom2
 check_overdispersion(dry_lichen_nb_mod)
 check_zeroinflation(dry_lichen_nb_mod)
 

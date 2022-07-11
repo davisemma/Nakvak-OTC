@@ -64,7 +64,7 @@ nmds_plot <- ggplot()+
   theme(plot.title = element_text(hjust = 0.5))+
   theme(legend.position="right")+
   geom_text(data=labels, aes(x = NMDS1, y = NMDS2, label = lifeform), 
-            hjust = 0.5,  vjust = 0.5,position = position_fill(vjust = 0.5), size = 2)
+            hjust = 0.5,  vjust = 0.5,position = position_fill(vjust = 0.5), size = 3)
   
 nmds_plot
 

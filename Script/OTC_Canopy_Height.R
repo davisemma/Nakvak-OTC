@@ -1,6 +1,5 @@
-#Script to test change in canopy height
-#of the various plots/lifeforms
-
+#Script to test change in maximum canopy height of plots
+rm(list=ls())
 #Load packages ----
 library(dplyr)
 library(tidyr)
@@ -14,23 +13,52 @@ library(glmmTMB)
 library(performance)
 library(bbmle)
 
-getwd()
 #READ DATA ----
-data <- read.csv("Point Frame/plot_data.csv") 
-holders <- read.csv("Point Frame/plot_year_genus.csv") #file with all lifeform x plot combinations
+data <- read.csv("Point Frame/plot_data_fin.csv") 
+holders <- read.csv("Point Frame/plot_year_genus_fin.csv") #file with all lifeform x plot combinations
 
-#Filter data for living material, hit order == 1 (top-most encounter)
-data_subset <- filter(data, status == "LIVE") %>%
-  group_by(plot, year, x, y) %>%
-  filter(., hit_order == min(hit_order))
+#FROMAT DATA ----
+#Calculate canopy height plot
+canopy_height <- data %>%
+  filter(., status == "LIVE") %>%
+  mutate(height = replace_na(height, 0)) %>%
+  filter(., hit_order == 1) %>%
+  group_by(subsite, treatment, plot, year) %>%
+  summarise(max_height = max(height)) %>%
+  mutate(subsite = as.factor(subsite), 
+         plot_pair = substr(plot,1,nchar(plot)-1),
+         plot = as.factor(plot),
+         treatment = as.factor(treatment),
+         year_scale = scale(year)) #converted to z-score for modelling
 
+#CANOPY HEIGHT ANALYSIS ----
+#Plot of the distribution of observations
+ggplot(canopy_height, aes(x = as.factor(year), y = max_height, fill = treatment)) +
+  geom_boxplot()+
+  #geom_histogram(position = "identity", alpha = 0.7, binwidth = 1)+
+  facet_grid(~subsite)+
+  theme_bw()
 
+canopy_subsite_mod <- glmmTMB(max_height ~ subsite
+                            + (1|plot_pair/plot) + (1|year_scale),
+                            family = gaussian, data = canopy_height) 
 
-data_subset <- filter(data, hit_order == 1)
+check_model(canopy_subsite_mod) #seems to be a good fit
+summary(canopy_subsite_mod)
+#Strong effect of subsite, will model dry vs. wet separately from here on
 
+#DRY
+dry_canopy_mod <- glmmTMB(mean_height ~ treatment*year_scale
+                        + (1|plot_pair/plot) + (1|year_scale),
+                        family = gaussian, data = filter(canopy_height, subsite == 'NAKVAKDRY'))
+summary(dry_canopy_mod)
+check_model(dry_canopy_mod)
 
-
-
-
-
-
+#WET
+wet_canopy_mod <- glmmTMB(mean_height ~ treatment*year_scale
+                        + (1|plot_pair/plot) + (1|year_scale),
+                        family = gaussian, data = filter(canopy_height, subsite == 'NAKVAKWET'))
+summary(wet_canopy_mod)
+check_model(wet_canopy_mod)
+sjPlot::plot_model(wet_canopy_mod, type = "int")
+sjPlot::plot_model(wet_canopy_mod)

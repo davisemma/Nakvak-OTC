@@ -1,4 +1,5 @@
 #Script to test change in MAX height of lifeforms
+rm(list=ls())
 #Load packages ----
 library(dplyr)
 library(tidyr)
@@ -13,11 +14,11 @@ library(performance)
 library(bbmle)
 
 #READ DATA ----
-data <- read.csv("Point Frame/plot_data.csv") 
-holders <- read.csv("Point Frame/plot_year_genus.csv") #file with all lifeform x plot combinations
+data <- read.csv("Point Frame/plot_data_fin.csv") 
+holders <- read.csv("Point Frame/plot_year_genus_fin.csv") #file with all lifeform x plot combinations
 
 #FROMAT DATA ----
-#Calculate n encounters for each lifeform x plot
+#Calculate max encounters for each lifeform x plot
 max_height <- data %>%
   filter(., status == "LIVE") %>%
   mutate(height = replace_na(height, 0)) %>%
