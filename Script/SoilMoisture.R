@@ -15,14 +15,14 @@ n_obs <- moisture_summary %>%
   group_by(site, year, subsite, treatment) %>%
   summarise(Obs = n())
 
-ggplot(moisture_summary, aes(x = factor(year), y = mean_moisture, fill = subsite))+
-  geom_boxplot(size = .3, outlier.size = 0.75)+
+ggplot(moisture_summary, aes(x = factor(year), y = mean_moisture, fill = treatment))+
+  geom_boxplot(size = .3, outlier.size = 0.75, )+
   theme_pubr(base_size = 10, legend = 'bottom')+
   theme(axis.text.x = element_text(angle = 45, hjust = 1))+
-  scale_fill_jco(alpha = 0.8)+
+  scale_fill_manual(values = c("plum1", 'seagreen3'))+
   labs(y = 'Percent soil moisture',
        x = 'Year')+
-  facet_wrap(~treatment)
+  facet_wrap(~subsite)
 
 #4x4
 model_dat <- moisture_summary %>%
