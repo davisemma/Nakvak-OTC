@@ -72,7 +72,8 @@ NVO_plot <- ggplot(filter(DD_plot, Variable == 'NVO'), aes(x = Year, y = Value, 
   geom_boxplot(size = .3, outlier.size = 0.75, position = position_dodge(preserve = "single"))+
   theme_pubr(base_size = 10)+
   theme(axis.text.x = element_text(angle = 45, hjust = 1))+
-  scale_fill_simpsons(alpha = 0.8)+
+  #scale_fill_simpsons(alpha = 0.8)+
+  scale_fill_manual(values = c("plum1", 'seagreen3'))+
   labs(y = 'Nival season offset (°C)')+
   facet_wrap(~Subsite)+
   ggtitle("NVO")
@@ -82,7 +83,8 @@ TSO_plot <- ggplot(filter(DD_plot, Variable == 'TSO'), aes(x = Year, y = Value, 
   geom_boxplot(size = .3, outlier.size = 0.75, position = position_dodge(preserve = "single"))+
   theme_pubr(base_size = 10)+
   theme(axis.text.x = element_text(angle = 45, hjust = 1))+
-  scale_fill_simpsons(alpha = 0.8)+
+  #scale_fill_simpsons(alpha = 0.8)+
+  scale_fill_manual(values = c("plum1", 'seagreen3'))+
   labs(y = 'Thawing season offset (°C)')+
   facet_wrap(~Subsite)+
   ggtitle("TSO")
@@ -92,6 +94,7 @@ TSO_plot
 
 ggarrange(NVO_plot + font("x.text", size = 8) + font("y.text", size = 8),
           TSO_plot + font("x.text", size = 8) + font("y.text", size = 8),
+          ncol = 1,
           common.legend = TRUE,
           legend = c("bottom"))
 #6.5 x 3.75
@@ -99,62 +102,24 @@ ggarrange(NVO_plot + font("x.text", size = 8) + font("y.text", size = 8),
 
 ##NVO DAT
 nvo.dat <- filter(DD_plot, Variable == 'NVO')
-nvo.dat$NVO <- nvo.dat$value
-nvo.dat$YearNum <- scale(as.numeric(nvo.dat$Year), center = TRUE, scale = TRUE)
+nvo.dat$NVO <- nvo.dat$Value
+nvo.dat$YearNum <- as.numeric(scale(as.numeric(nvo.dat$Year)), center = TRUE, scale = TRUE)
 
-nvo.mod <- lmer(NVO ~ Subsite*Year*Treatment + (1|Plot), data = nvo.dat)
-summary(nvo.mod)
-plot(nvo.mod)
-qqnorm(resid(nvo.mod))
-qqline(resid(nvo.mod))
+nvo_dry_mod <- glmmTMB(NVO ~ Treatment * YearNum + (1|Plot), 
+                   family = 'gaussian',data = filter(nvo.dat, Subsite == "Dry"))
 
-nvo.con <- emmeans(nvo.mod , ~Treatment|Subsite)
-contrast(nvo.con, "poly", "tukey")  
 
+nvo_mod <- glmmTMB(NVO ~ Subsite * Treatment + (1|Plot), 
+                       family = 'gaussian',data = nvo.dat)
+
+summary(nvo_mod)
 
 ##TSO DAT
 tso.dat <- filter(DD_plot, Variable == 'TSO')
+tso.dat$TSO <- tso.dat$Value
+tso.dat$YearNum <- as.numeric(scale(as.numeric(tso.dat$Year)), center = TRUE, scale = TRUE)
 
-tso.mod <- lmer(value ~ Year*Treatment + (1|Plot), data = filter(tso.dat, Subsite == 'DRY'))
-summary(tso.mod)
-plot(tso.mod)
-qqnorm(resid(tso.mod))
-qqline(resid(tso.mod))
+tso_mod <- glmmTMB(TSO ~ Treatment + (1|Plot), 
+                   family = 'gaussian', data = filter(tso.dat, Subsite == 'Wet'))
 
-sjPlot::tab_model(tso.mod)
-sjPlot::tab_model(nvo.mod)
-
-tso.con <- emmeans(tso.mod , ~Treatment|Year)
-contrast(tso.con, "poly", "tukey")  
-
-
-#MEAN ANNUAL GST
-test <- good_ground %>%
-  group_by(Year, Plot) %>%
-  summarize(Tave = mean(Tground, na.rm = TRUE)) %>%
-  spread(., "Plot", value = Tave)
-
-#write.csv(test, "~/Desktop/Tave_GST_Ann_Plots.csv")
-
-#CORRELATION between plot canopy height and offsets
-ave.offsets <- DD_plot %>%
-  group_by(Plot, Subsite, Variable) %>%
-  summarize(MeanOffset = mean(value, na.rm = TRUE))
-
-#write.csv(ave.offsets, "~/Desktop/Offsets.csv")
-
-sum.dat <- read_csv("Offset Plot Height/Offsets_Height.csv")
-corr.test(filter(sum.dat, Variable == 'NVO')$MeanOffset, filter(sum.dat, Variable == 'NVO')$MeanHeight, method = 'spearman')
-corr.test(filter(sum.dat, Variable == 'TSO')$MeanOffset, filter(sum.dat, Variable == 'TSO')$MeanHeight, method = 'spearman')
-
-nvo.wet <- filter(sum.dat, Variable == 'NVO')# %>%
-  filter(., Subsite == 'WET')
-
-plot(nvo.wet$MeanOffset, nvo.wet$MeanHeight)
-
-
-
-
-
-
- 
+summary(tso_mod)
