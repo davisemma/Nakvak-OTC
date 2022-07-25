@@ -4,26 +4,45 @@ library(tidylog)
 library(lubridate)
 library('ggthemes')
 
-setwd("Data")
-
 mean_temp <- read_csv("Air Temperature/NAK_monthly_mean_temp.csv") %>%
   mutate(month_long = month(month, label = TRUE, abbr = FALSE))
 
+plot_theme <-   theme_few() + 
+  theme(legend.position = "top",
+        legend.justification = c(0,-1),
+        legend.box.margin = margin(t = -3, b = -10, l = -22, unit = "pt"),
+        legend.key.size = unit(1, 'lines'),
+        legend.text = element_text(size = 8),
+        legend.title = element_text(size = 8, face = 'bold'),
+        plot.title = element_text(size = 10, vjust = 2, face = 'bold', margin = margin(t = 3, unit = 'pt')),
+        plot.title.position = "plot",
+        axis.title.x = element_text(size = 8, face = 'bold'),
+        axis.text.x = element_text(size = 8),
+        axis.title.y = element_text(size = 8, face = 'bold'),
+        axis.text.y = element_text(size = 8),
+        axis.line = element_line(colour = 'black', size = 0),
+        strip.text.x = element_text(size = 8),
+        panel.border = element_rect(size = .4),
+        axis.ticks = element_line(size = 0.3, ),
+        axis.ticks.length = unit(1.5, "pt"))
+
 ggplot(mean_temp, aes(x = year, y = t_ave))+
+  ggtitle("Average monthly temperatures from 1981 to 2021")+
   geom_rect(
-    fill = "lightblue", color = NA, alpha = 0.01,
+    fill = "#E5EDF8", color = NA,
     xmin = 2008,
     xmax = 2021,
     ymin = -Inf,
     ymax = Inf)+
-  geom_smooth(size = 0.3, alpha = 0.2, fill = 'purple', color = 'red')+
-  geom_line(size = 0.3)+
-  theme_few()+
+  geom_smooth(size = 0.5, fill = '#FFBBFF', color = '#B765A5')+
+  geom_line(size = 0.2)+
+  scale_x_continuous(breaks = c(1980, 2000, 2020))+
   facet_wrap(~month_long, scales = "free_y")+
-  ylab('Mean temperature (°C)')+
+  ylab('Temperature (°C)')+
   xlab('Year')+
-  ggtitle("Mean monthly temperatures 1981 - 2021")+
-  theme(plot.title = element_text(hjust = 0.5))
+  plot_theme
+
+#4 x 6 export
 
 ###
 mean_temp <- read_csv("Air Temperature/ERA5_mean_2m_temperature_monthly.csv")%>%

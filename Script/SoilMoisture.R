@@ -15,16 +15,39 @@ n_obs <- moisture_summary %>%
   group_by(site, year, subsite, treatment) %>%
   summarise(Obs = n())
 
-ggplot(moisture_summary, aes(x = factor(year), y = mean_moisture, fill = treatment))+
-  geom_boxplot(size = .3, outlier.size = 0.75, )+
-  theme_pubr(base_size = 10, legend = 'bottom')+
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
-  scale_fill_manual(values = c("plum1", 'seagreen3'))+
-  labs(y = 'Percent soil moisture',
-       x = 'Year')+
-  facet_wrap(~subsite)
+facet_labels <- as_labeller(c('Dry' = 'Dry plots', 'Wet' = 'Wet plots'))
 
-#4x4
+plot_theme <-   theme_few() + 
+  theme(legend.position = "top",
+        legend.justification = c(0,-1),
+        legend.box.margin = margin(t = -5, b = -15, l = -6, unit = "pt"),
+        legend.key.size = unit(1, 'lines'),
+        legend.text = element_text(size = 8),
+        legend.title = element_text(size = 8, face = 'bold'),
+        plot.title = element_text(size = 10, vjust = 2, face = 'bold', margin = margin(t = 3, unit = 'pt')),
+        plot.title.position = "plot",
+        axis.title.x = element_text(size = 8, face = 'bold'),
+        axis.text.x = element_text(size = 8),
+        axis.title.y = element_text(size = 8, face = 'bold'),
+        axis.text.y = element_text(size = 8),
+        axis.line = element_line(colour = 'black', size = 0),
+        strip.text.x = element_text(size = 8, face = 'bold', hjust = 0, margin = margin(t = 4, b = 4, l = 0, unit = 'pt')),
+        panel.border = element_rect(size = .4),
+        axis.ticks = element_line(size = 0.3, ),
+        axis.ticks.length = unit(1.5, "pt"))
+
+ggplot(moisture_summary, aes(x = year, y = mean_moisture, group = interaction(treatment, year), fill = treatment))+
+  ggtitle('Instantaneous soil moisture measurements by year')+
+  geom_boxplot(size = 0.3, outlier.size = 0.3)+
+  scale_fill_manual(values = c("plum1", 'seagreen3'), name = "Treatment")+
+  labs(y = '% Soil moisture',
+       x = '')+
+  scale_x_continuous(breaks=seq(2009, 2021, 2))+
+  facet_wrap(~subsite, scales = 'free_y', labeller = facet_labels)+
+  plot_theme
+
+#3 x 6 inch export size 
+
 model_dat <- moisture_summary %>%
   ungroup()%>%
   mutate(plot_pair = factor(paste(treatment,plot, sep = "")),

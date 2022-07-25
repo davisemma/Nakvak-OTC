@@ -32,7 +32,7 @@ air <- air %>%
   mutate(year = as.integer(substr(date, 1, 4)))
 
 #Subsetting data for analysis of summer OTC effect 
-ground_month_select <- filter(ground, month(date) == 6 | month(date) == 7 | month(date) == 8)
+ground_month_select <- filter(ground, month(date) == 7 | month(date) == 8)
 ground_air_merge <- merge(ground_month_select, air, all.x = TRUE)%>%
   mutate(diff_sa = t_ground - t_air) #How much warmer is ground than air on a given day? (if+)
 
@@ -48,7 +48,7 @@ ground_air_summary <- ground_air_merge %>%
   summarise(n_obs = n(),
             mean_diff_sa = mean(diff_sa)) %>% #On average, how much warmer is ground than air in the summer?
   mutate(plot_num = substr(plot, 3, 4)) %>%
-  filter(., n_obs > 85) #Select plots with > 90% data avail
+  filter(., n_obs > 55) #Select plots with > 90% data avail
 
 ggplot(ground_air_summary, aes(x = year, y = mean_diff_sa, color = treatment))+
   geom_hline(yintercept = 0, color = 'dark grey')+
@@ -61,10 +61,8 @@ ggplot(ground_air_summary, aes(x = year, y = mean_diff_sa, color = treatment))+
   ylab('Seasonal average of (Tground - Tair)')+
   ggtitle('How much warmer (+) or cooler (-) is ground than air in summer?')
   
-
 ga_wide <- pivot_wider(ground_air_summary[2:7], names_from = treatment, values_from = mean_diff_sa) %>%
-  mutate(diff_otc_ctl = OTC-CTL) %>%
-  filter(., n_obs > 90)
+  mutate(diff_otc_ctl = OTC-CTL)
 
 #Difference in ground temperatures between OTC and CTL - 
 ggplot(ga_wide, aes(x = as.integer(year), y = diff_otc_ctl, color = subsite))+
@@ -91,83 +89,106 @@ tbl_with_sources_hourly <-
              full.names = T) %>% 
   map_df(~read_plus(.))
 
-ground_hourly <- tbl_with_sources_hourly
-names(ground_hourly) <- c("date", "t_ground", "plot")
-ground_hourly <- ground_hourly %>%
+ground_hourly <- tbl_with_sources_hourly %>%
+  set_names(., c("date", "t_ground", "plot")) %>% 
   mutate(year = as.integer(substr(date, 1, 4)),
          plot = substr(plot, 31, 42),
          subsite = substr(plot, 10,12),
-         treatment = substr(plot, 6,8))
+         treatment = substr(plot, 6,8),
+         short_date = as_date(date))
 
-test <- ground_hourly %>%
-  mutate(short_date = as_date(date)) %>%
+daily_t_var <- ground_hourly %>%
   group_by(plot, short_date) %>%
-  #complete(year, subsite, treatment) %>%
-  summarise(n_obs = n(),
+  summarise(n_obs = sum(!is.na(t_ground)), #number of actual temperature observations per day
             min_t_ground = min(t_ground),
             max_t_ground = max(t_ground),
             daily_t_var = max_t_ground-min_t_ground) %>%
-  filter(., n_obs == 24) %>%
-  mutate(year = substr(short_date, 1,4),
-         year_plot = paste(year, plot, sep = "_")) %>%
-  mutate(subsite = substr(year_plot, 15,17),
-       treatment = substr(year_plot, 11,13),
-       year = as.integer(substr(year_plot, 1,4)),
-       year_scale = scale(year),
-       plot = as.factor(substr(year_plot, 6,9)))
-
-ggplot(test, aes(x = short_date, y = daily_t_var, color = subsite))+
-  geom_line()+
-  facet_wrap(~as.factor(year), scales ="free_x")
-
-test_lt1 <- test %>%
-  filter(., month(short_date) <= 6 | month(short_date) >= 9) %>%
-  mutate(day_lt1 = if_else(daily_t_var <= 1, 1, 0))
-
-ggplot(test_lt1, aes(x = short_date, y = day_lt1))+
-  geom_point()+
-  facet_wrap(~year, scales = "free_x")
-
-
-test2 <- test %>%
-  #filter(., month(short_date) <= 6 | month(short_date) >= 9) %>% #Dont need to filter bc var > 1 extremely infrequent
-  mutate(days_lt1 = if_else(daily_t_var <= 1, 1, 0)) %>%
-  group_by(year_plot) %>%
-  summarise(n_obs = sum(!is.na(days_lt1)),
-            freq_lt1 = sum(days_lt1, na.rm = TRUE)) %>%
-  filter(., n_obs >= 360) %>%
-  #drop_na() %>%
-  mutate(subsite = substr(year_plot, 15,17),
+  ungroup()%>%
+  mutate(daily_t_var = if_else(as.numeric(n_obs) != 24, NA_real_, daily_t_var), #fill days without 24 hourly observations with NA
+         year = substr(short_date, 1,4),
+         year_plot = paste(year, plot, sep = "_"),
+         subsite = substr(year_plot, 15,17),
          treatment = substr(year_plot, 11,13),
          year = as.integer(substr(year_plot, 1,4)),
          year_scale = scale(year),
          plot = as.factor(substr(year_plot, 6,9)))
 
+t_var <- daily_t_var %>%
+  filter(., year > 2011) %>% #Bad data coverage for 2010/2011 so remove 
+  mutate(day_var_lt1 = if_else(daily_t_var <= 1, 1, 0), #Boolean t_var <= 1
+         day_max_lt3 = if_else(max_t_ground <=3, 1, 0), #Boolean t_max <= 3
+         snow_day = if_else(day_var_lt1+day_max_lt3 == 2, 1, 0))%>% #Value == 2 means t_var and t_max meet criteria, classify as '1'
+  group_by(plot, treatment) %>%
+  mutate(rolling_snow_day = zoo::rollsumr(snow_day, k = 3, fill = NA, align = 'left')) #value = 3 in rolling_snow_day output means three next days with t_var <= 1 AND max_t <= 3
 
-ggplot(test2, aes(x = as.factor(year), y = freq_lt1, fill = treatment, alpha = 0.5))+
-  geom_boxplot()+
-  theme_pubr()+
-  facet_wrap(~subsite)+
-  scale_fill_manual(values = c("coral", "cornflower blue"))+
-  ylab("#Days Tvar < 1°C")+
-  xlab("Year")
+#n snow days
+data_completeness <- t_var %>%
+  group_by(plot, year, subsite, treatment, year_plot) %>%
+  summarize(n_obs = sum(!is.na(daily_t_var))) %>%
+  filter(., n_obs > 350)
+  
+snow_day_complete <- t_var %>%
+  filter(., snow_day == 1) %>%
+  group_by(plot, year, subsite, treatment, year_plot) %>%
+  summarise(n_snow_days = sum(snow_day)) %>%
+  merge(data_completeness, ., all.x = TRUE)
+
+ggplot(snow_day_complete, aes(x = as.factor(year), y = n_snow_days , fill = treatment))+
+  geom_boxplot(size = .3, outlier.size = 0.75, )+
+  theme_pubr(base_size = 10, legend = 'bottom')+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  scale_fill_manual(values = c("plum1", 'seagreen3'))+
+  labs(y = '# Snow days',
+       x = 'Year')+
+  facet_wrap(~subsite)  
+
+snow_day_mod <- glmmTMB(n_snow_days ~ treatment + scale(year) + (1|plot) + (1|year), 
+                        family = 'gaussian', data = filter(snow_day_complete, subsite == 'Dry'))
+summary(snow_day_mod)
+#Fewer snow days in OTC
+
+#Snow onset and offset ---
+snow_onset <- t_var %>%
+  filter(., month(short_date) >= 9 & month(short_date) <= 11) %>%
+  filter(., rolling_snow_day == 3) %>%
+  group_by(plot, year, treatment) %>%
+  mutate(onset_date = min(short_date)) %>%
+  group_by(plot, year, treatment) %>%
+  filter(short_date==onset_date) %>%
+  mutate(doy_onset = yday(onset_date))
+  
+snow_offset <- t_var %>%
+  group_by(year_plot) %>%
+  filter(., month(short_date) <= 7) %>%
+  filter(., rolling_snow_day == 3) %>%
+  mutate(offset_date = max(short_date)) %>%
+  group_by(plot, year, treatment) %>%
+  filter(short_date==offset_date) %>%
+  mutate(doy_offset = yday(offset_date))
 
 
-#library(glmmTMB)
-dry_dat<-filter(test2, subsite == 'Dry' & year > 2011)
-dry_sno_mod <- glmmTMB(freq_lt1 ~ treatment + year_scale + (1|plot) + (1|year_scale), 
-        family = nbinom1,
-        data = dry_dat)
-summary(dry_sno_mod)
-check_model(dry_sno_mod) 
+snow_duration <- merge(select(snow_offset, c("plot", "year", "year_plot", "subsite", "treatment", "doy_offset")),
+           select(snow_onset, c("plot", "year", "year_plot", "subsite", "treatment", "doy_onset")), all.x = TRUE) %>%
+  mutate(snow_free = abs(doy_offset - doy_onset))
 
-wet_dat<-filter(test2, subsite == 'Dry' & year > 2011)
-wet_sno_mod <- glmmTMB(freq_lt1 ~ treatment + year_scale + (1|plot) + (1|year_scale), 
-               family = nbinom1,
-               data = wet_dat)
-summary(wet_sno_mod)
-check_model(wet_sno_mod) 
+###Still possible that big gaps could lead to skewed detection of onset and offset
 
+ggplot(snow_duration, aes(x = as.factor(year), y = snow_free , fill = treatment))+
+  geom_boxplot(size = .3, outlier.size = 0.75, )+
+  theme_pubr(base_size = 10, legend = 'bottom')+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  scale_fill_manual(values = c("plum1", 'seagreen3'))+
+  labs(y = '# Snow free days',
+       x = 'Year')+
+  facet_wrap(~subsite)
+  
+snow_duration_mod <- glmmTMB(snow_free ~ treatment*scale(year) + (1|plot) + (1|year), family = 'gaussian', data = filter(snow_duration, subsite == 'Dry'))
+summary(snow_duration_mod)
+
+check_model(snow_duration_mod)
+
+mod <- glmmTMB(snow_free ~ treatment*scale(year) + (1|plot) + (1|year), family = 'gaussian', data = filter(snow_duration, subsite == 'Wet'))
+summary(mod)
 
 #OTC may have some influence on reducing the number of snow covered days at dry sites
 #Since it's CTL that has more snow days than OTC, doesn't seem to be trapping but rather longer 
