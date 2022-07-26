@@ -50,31 +50,73 @@ ground_air_summary <- ground_air_merge %>%
   mutate(plot_num = substr(plot, 3, 4)) %>%
   filter(., n_obs > 55) #Select plots with > 90% data avail
 
+plot_theme <-   theme_few() + 
+  theme(legend.position = "top",
+        legend.justification = c(0,-1),
+        legend.box.margin = margin(t = -5, b = -10, l = -6, unit = "pt"),
+        legend.key.size = unit(1, 'lines'),
+        legend.text = element_text(size = 8),
+        legend.title = element_text(size = 8, face = 'bold'),
+        plot.title = element_text(size = 10, vjust = 2, face = 'bold', margin = margin(t = 3, unit = 'pt')),
+        plot.title.position = "plot",
+        axis.title.x = element_text(size = 8, face = 'bold'),
+        axis.text.x = element_text(size = 8),
+        axis.title.y = element_text(size = 8, face = 'bold'),
+        axis.text.y = element_text(size = 8),
+        axis.line = element_line(colour = 'black', size = 0),
+        strip.text.x = element_text(size = 8, face = 'bold', hjust = 0, margin = margin(t = 4, b = 4, l = 0, unit = 'pt')),
+        panel.border = element_rect(size = .4),
+        axis.ticks = element_line(size = 0.3, ),
+        axis.ticks.length = unit(1.5, "pt"),)
+
+facet_labels <- as_labeller(c('Dry' = 'Dry plots', 'Wet' = 'Wet plots'))
+
 ggplot(ground_air_summary, aes(x = year, y = mean_diff_sa, color = treatment))+
   geom_hline(yintercept = 0, color = 'dark grey')+
   geom_point(alpha = 0.5, shape = 20, size = 4)+
   geom_smooth(alpha = 0.2)+
-  theme_bw()+
   scale_color_manual(values = c("hot pink", "blue"))+
   scale_x_continuous(breaks = c(2012, 2014, 2016, 2018, 2020, 2022))+
-  facet_wrap(~subsite)+
+  facet_wrap(~subsite, labeller = facet_labels)+
   ylab('Seasonal average of (Tground - Tair)')+
-  ggtitle('How much warmer (+) or cooler (-) is ground than air in summer?')
+  ggtitle('How much warmer (+) or cooler (-) is ground than air in summer?')+
+  plot_theme
   
 ga_wide <- pivot_wider(ground_air_summary[2:7], names_from = treatment, values_from = mean_diff_sa) %>%
   mutate(diff_otc_ctl = OTC-CTL)
 
+#Calculate direct OTC effect --- 
+otc_effect <- ground_month_select %>%
+  mutate(plot = substr(plot, 1,4))%>%
+  pivot_wider(., names_from = treatment, values_from = t_ground) %>%
+  mutate(OTC_effect = OTC - CTL) %>%
+  filter(!is.na(OTC_effect)) %>%
+  group_by(plot, year, subsite) %>%
+  summarise(ave_OTC_effect = mean(OTC_effect),
+            n_obs = n()) %>%
+  filter(., n_obs > 55)
+  
+#Calculating average OTC effect ---
+otc_effect_summary <- otc_effect %>%
+  filter(., year < 2019) %>%
+  group_by(subsite) %>%
+  summarise(mean = mean(ave_OTC_effect),
+            SD = sd(ave_OTC_effect))
+  
 #Difference in ground temperatures between OTC and CTL - 
-ggplot(ga_wide, aes(x = as.integer(year), y = diff_otc_ctl, color = subsite))+
+ggplot(otc_effect, aes(x = as.integer(year), y = ave_OTC_effect, color = subsite, fill = subsite))+
   geom_hline(yintercept = 0, color = 'dark grey')+
-  geom_point(alpha = 0.5, shape = 20, size = 4)+
-  geom_smooth(alpha = 0.2)+
+  geom_smooth(alpha = 0.5, size = 0.75, show.legend = FALSE)+
+  geom_point(alpha = 0.9, shape = 21, size = 2, color = 'black')+
   theme_bw()+
-  scale_color_manual(values = c("coral", "cornflower blue"))+
-  scale_x_continuous(breaks = c(2012, 2014, 2016, 2018, 2020, 2022))+
-  ylab('OTC(offset) - CTL(offset)')+
+  scale_fill_manual(values = c("#F3E086", "#BED4F1"), name = 'Moisture class')+
+  scale_color_manual(values = c("#F3E086", "#BED4F1"), name = 'Moisture class')+
+  scale_x_continuous(breaks = c(2012, 2014, 2016, 2018, 2020))+
+  xlim(2012, 2020)+
+  ylab('Average effect (°C)')+
   xlab('Year')+
-  ggtitle('How much warmer are OTC ground temps (than the air) than CTL?')
+  ggtitle('Effect of OTC on summer GST by soil moisutre class')+
+  plot_theme
 
 #1. The difference in OTC and CTL is relatively constant over time, with offset of ~0.75
 #2. At beginning, OTCs have cooler soil than air in wet plots relative to controls, over time this changes to warmer soil than air
@@ -134,17 +176,19 @@ snow_day_complete <- t_var %>%
   merge(data_completeness, ., all.x = TRUE)
 
 ggplot(snow_day_complete, aes(x = as.factor(year), y = n_snow_days , fill = treatment))+
+  ggtitle("Number of snow days per year")+
   geom_boxplot(size = .3, outlier.size = 0.75, )+
-  theme_pubr(base_size = 10, legend = 'bottom')+
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
-  scale_fill_manual(values = c("plum1", 'seagreen3'))+
+  scale_x_discrete(breaks=seq(2010, 2020, 2))+
+  scale_fill_manual(values = c("plum1", 'seagreen3'), name = 'Treatment')+
   labs(y = '# Snow days',
        x = 'Year')+
-  facet_wrap(~subsite)  
+  facet_wrap(~subsite, labeller = facet_labels)+
+  plot_theme
 
 snow_day_mod <- glmmTMB(n_snow_days ~ treatment + scale(year) + (1|plot) + (1|year), 
                         family = 'gaussian', data = filter(snow_day_complete, subsite == 'Dry'))
 summary(snow_day_mod)
+check_model(snow_day_mod)
 #Fewer snow days in OTC
 
 #Snow onset and offset ---
@@ -174,13 +218,14 @@ snow_duration <- merge(select(snow_offset, c("plot", "year", "year_plot", "subsi
 ###Still possible that big gaps could lead to skewed detection of onset and offset
 
 ggplot(snow_duration, aes(x = as.factor(year), y = snow_free , fill = treatment))+
+  ggtitle("Duration of snow free period")+
   geom_boxplot(size = .3, outlier.size = 0.75, )+
-  theme_pubr(base_size = 10, legend = 'bottom')+
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
-  scale_fill_manual(values = c("plum1", 'seagreen3'))+
-  labs(y = '# Snow free days',
+  scale_fill_manual(values = c("plum1", 'seagreen3'), name = 'Treatment')+
+  labs(y = '# Days',
        x = 'Year')+
-  facet_wrap(~subsite)
+  facet_wrap(~subsite, labeller = facet_labels)+
+  scale_x_discrete(breaks=seq(2010, 2020, 2))+
+  plot_theme
   
 snow_duration_mod <- glmmTMB(snow_free ~ treatment*scale(year) + (1|plot) + (1|year), family = 'gaussian', data = filter(snow_duration, subsite == 'Dry'))
 summary(snow_duration_mod)
@@ -194,28 +239,21 @@ summary(mod)
 #Since it's CTL that has more snow days than OTC, doesn't seem to be trapping but rather longer 
 #longer snow-free season caused by warmer temps 
 
-#Looking at temp diffs between pairs of OTC and CTL
-ground_otc_ctl <- ground %>%
-  mutate(plot_num = substr(plot, 3, 4)) %>%
-  select(-plot)
-
-ggplot(ground_otc_ctl, aes(x = date, y = t_ground, color = treatment))+
-  geom_line()+
+ggplot(snow_duration)+
+  geom_point(aes(x = year, y = doy_onset, color = treatment))+
+  geom_point(aes(x = year, y = doy_offset, color = treatment))+
   facet_wrap(~subsite)
+  
+x <- snow_duration %>%
+  group_by(treatment, subsite) %>%
+  summarise(mean_onset = mean(doy_onset, na.rm = TRUE),
+            mean_offset = mean(doy_offset),
+            diff = mean_onset - mean_offset)
+  
 
 
-x <- pivot_wider(ground_otc_ctl, names_from = treatment, values_from = t_ground) %>%
-  mutate(diff_otc_ctl = OTC-CTL)
 
-ggplot(x, aes(x = date, y = diff_otc_ctl, color = subsite))+
-  geom_line(alpha = 0.7)
 
-x2 <- x %>%
-  group_by(date, subsite) %>%
-  summarise(mean_diff = mean(diff_otc_ctl, na.rm = TRUE)) %>%
-  mutate(year = substr(date, 1,4))
 
-ggplot(x2, aes(x = date, y = mean_diff, color = subsite))+
-  geom_line()+
-  facet_wrap(~as.factor(year), scales ="free_x")
+
   
