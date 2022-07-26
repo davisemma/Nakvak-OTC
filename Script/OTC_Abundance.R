@@ -15,6 +15,7 @@ library(performance)
 library(bbmle)
 
 getwd()
+setwd("Data")
 #READ DATA ----
 data <- read.csv("Point Frame/plot_data_fin.csv") 
 holders <- read.csv("Point Frame/plot_year_genus_fin.csv") #file with all lifeform x plot combinations
@@ -45,13 +46,34 @@ forb <- filter(encounters_merge, lifeform == 'FORB')
 moss <- filter(encounters_merge, lifeform == 'MOSS')
 liverwort <- filter(encounters_merge, lifeform == 'LIVERWORT')
 
+#Plotting format - 
+plot_theme <-   theme_few() + 
+  theme(legend.position = "top",
+        legend.justification = c(0,-1),
+        legend.box.margin = margin(t = -5, b = -15, l = -6, unit = "pt"),
+        legend.key.size = unit(1, 'lines'),
+        legend.text = element_text(size = 8),
+        legend.title = element_text(size = 8, face = 'bold'),
+        plot.title = element_text(size = 10, vjust = 2, face = 'bold', margin = margin(t = 3, unit = 'pt')),
+        plot.title.position = "plot",
+        axis.title.x = element_text(size = 8, face = 'bold'),
+        axis.text.x = element_text(size = 8),
+        axis.title.y = element_text(size = 8, face = 'bold'),
+        axis.text.y = element_text(size = 8),
+        axis.line = element_line(colour = 'black', size = 0),
+        strip.text.x = element_text(size = 8, face = 'bold', hjust = 0, margin = margin(t = 4, b = 4, l = 0, unit = 'pt')),
+        panel.border = element_rect(size = .4),
+        axis.ticks = element_line(size = 0.3, ),
+        axis.ticks.length = unit(1.5, "pt"),)
+
 #ABUNDANCE ANALYSIS ----
 #GRAMINOIDS ----
 #Plot of the distribution of observations
 ggplot(gram, aes(x = encounters, fill = treatment)) +
   geom_histogram(position = "identity", alpha = 0.7, binwidth = 10)+
   facet_grid(year~subsite)+
-  theme_bw()
+  scale_fill_manual(values = c("plum1", 'seagreen3'), name = "Treatment")+
+  plot_theme
 
 #Dry and wet seem to have very different distributions; test whether they could be modelled separately
 gram_subsite_mod <- glmmTMB(encounters ~ subsite
@@ -85,14 +107,10 @@ dry_gram_nb_mod <- glmmTMB(encounters ~ treatment*year_scale
 check_overdispersion(dry_gram_nb_mod)
 check_zeroinflation(dry_gram_nb_mod)
 #nbinom1 fixes overdispersion and is a better fit for 0's. Compare models 
-#Running ZANB model just to see how different 
-dry_gram_zanb_mod <- glmmTMB(encounters ~ treatment*year_scale
-                           + (1|plot_pair/plot) + (1|year_scale), ziformula = ~1,
-                           family = truncated_nbinom1, data = filter(gram, subsite == 'NAKVAKDRY'))
 
 #Model comparison; ZAP and NB 
-AICtab(dry_gram_p_mod, dry_gram_nb_mod,
-       dry_gram_zap_mod, dry_gram_zanb_mod)
+AICtab(dry_gram_p_mod, dry_gram_nb_mod)
+
 #nb model is most parsimonious
 summary(dry_gram_nb_mod)
 sjPlot::plot_model(dry_gram_nb_mod)
@@ -105,10 +123,9 @@ wet_gram_p_mod <- glmmTMB(encounters ~ treatment*year_scale
 check_zeroinflation(wet_gram_p_mod) #no zeros 
 check_overdispersion(wet_gram_p_mod)
 #No indication of zero inflation in wet data, so choose between poiss and nbino
-
 wet_gram_nb_mod <- glmmTMB(encounters ~ treatment*year_scale
                              + (1|plot_pair/plot) + (1|year_scale),
-                             family = nbinom1, data = filter(gram, subsite == 'NAKVAKWET'))
+                             family = nbinom2, data = filter(gram, subsite == 'NAKVAKWET'))
 
 check_overdispersion(wet_gram_nb_mod)
 #nb model addresses overdispersion. Compare using AICtab out of curiosity 
@@ -126,7 +143,8 @@ sjPlot::plot_model(wet_gram_nb_mod)
 ggplot(lichen, aes(x = encounters, fill = treatment)) +
   geom_histogram(position = "identity", alpha = 0.7, binwidth = 1)+
   facet_grid(year~subsite)+
-  theme_bw()
+  scale_fill_manual(values = c("plum1", 'seagreen3'), name = "Treatment")+
+  plot_theme
 
 #Dry and wet seem to have very different distributions; test whether they could be modelled separately
 lichen_subsite_mod <- glmmTMB(encounters ~ subsite
@@ -166,23 +184,6 @@ wet_lichen_p_mod <- glmmTMB(encounters ~ treatment*year_scale
 check_overdispersion(wet_lichen_p_mod) #data are under-dispersed
 check_zeroinflation(wet_lichen_p_mod) #zero inflation not an issue
 
-wet_lichen_nb_mod <- glmmTMB(encounters ~ treatment*year_scale
-                                    + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
-                                    family = nbinom1, data = filter(lichen, subsite == 'NAKVAKWET'))
-
-check_overdispersion(wet_lichen_nb_mod)
-check_zeroinflation(wet_lichen_nb_mod) #slight overfitting of zero's
-
-wet_lichen_zap_mod <- glmmTMB(encounters ~ treatment*year_scale
-                             + (1|plot_pair/plot) + (1|year_scale), ziformula = ~1,
-                             family = truncated_poisson, data = filter(lichen, subsite == 'NAKVAKWET'))
-
-wet_lichen_zinb_mod <- glmmTMB(encounters ~ treatment*year_scale
-                               + (1|plot_pair/plot) + (1|year_scale), ziformula = ~1,
-                               family = truncated_nbinom1, data = filter(lichen, subsite == 'NAKVAKWET'))
-
-AICtab(wet_lichen_p_mod, wet_lichen_nb_mod,
-       wet_lichen_zap_mod, wet_lichen_zinb_mod) #
 summary(wet_lichen_p_mod) 
 
 sjPlot::plot_model(wet_lichen_p_mod, type = 'int')
@@ -193,7 +194,8 @@ sjPlot::plot_model(wet_lichen_p_mod, type = 'int')
 ggplot(sdeci, aes(x = encounters, fill = treatment)) +
   geom_histogram(position = "identity", alpha = 0.7, binwidth = 10)+
   facet_grid(year~subsite)+
-  theme_bw()
+  plot_theme+
+  scale_fill_manual(values = c("plum1", 'seagreen3'), name = "Treatment")
 
 #Dry and wet seem to have similar distributions; test whether they could be modelled separately
 sdeci_subsite_mod <- glmmTMB(encounters ~ subsite
@@ -226,17 +228,8 @@ dry_sdeci_p_mod <- glmmTMB(encounters ~ treatment*year_scale
                             + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
                             family = poisson, data = filter(sdeci, subsite == 'NAKVAKDRY'))
 
-check_overdispersion(dry_sdeci_p_mod) #Not really overdispersed
+check_overdispersion(dry_sdeci_p_mod) #Not overdispersed
 check_zeroinflation(dry_sdeci_p_mod) #No zeros
-
-dry_sdeci_nb_mod <- glmmTMB(encounters ~ treatment*year_scale
-                           + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
-                           family = nbinom1, data = filter(sdeci, subsite == 'NAKVAKDRY'))
-
-check_overdispersion(dry_sdeci_nb_mod)
-check_zeroinflation(dry_sdeci_nb_mod) #weak underfitting of zeros
-
-AICtab(dry_sdeci_p_mod, dry_sdeci_nb_mod)
 
 summary(dry_sdeci_p_mod)
 
@@ -250,7 +243,7 @@ check_zeroinflation(wet_sdeci_p_mod) #no zeros in data, try nb model
 
 wet_sdeci_nb_mod <- glmmTMB(encounters ~ treatment*year_scale
                            + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
-                           family = nbinom1, data = filter(sdeci, subsite == 'NAKVAKWET'))
+                           family = nbinom2, data = filter(sdeci, subsite == 'NAKVAKWET'))
 
 check_overdispersion(wet_sdeci_nb_mod)
 
@@ -264,7 +257,8 @@ sjPlot::plot_model(wet_sdeci_nb_mod, type = 'int')
 ggplot(moss, aes(x = encounters, fill = treatment)) +
   geom_histogram(position = "identity", alpha = 0.7, binwidth = 10)+
   facet_grid(year~subsite)+
-  theme_bw()
+  plot_theme+
+  scale_fill_manual(values = c("plum1", 'seagreen3'), name = "Treatment")
 
 #Dry and wet seem to have very distributions; test whether they could be modelled separately
 moss_subsite_mod <- glmmTMB(encounters ~ subsite
@@ -484,6 +478,7 @@ AICtab(wet_sever_p_mod, wet_sever_nb_mod,
        wet_sever_zap_mod)
 
 summary(wet_sever_nb_mod)
-
+sjPlot::plot_model(wet_sever_nb_mod)
+sjPlot::plot_model(wet_sever_nb_mod, type = 'int')
 
 #----END
