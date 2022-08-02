@@ -2,8 +2,10 @@ library("vegan")
 library("ggplot2")
 library("ggsci")
 library("ggpubr")
+library("tidyverse")
 
 #READ DATA ----
+setwd("Data")
 data <- read.csv("Point Frame/plot_data_fin.csv") 
 holders <- read.csv("Point Frame/plot_year_genus_fin.csv") #file with all lifeform x plot combinations
 
@@ -26,19 +28,30 @@ encounters_merge <- merge(encounters, holders, all.y = TRUE) %>%
 encounters_wide <- pivot_wider(encounters_merge, names_from = lifeform, values_from = encounters)
 
 #subset the dataframe on which to base the ordination (dataframe 1)
-life_dat <- as_tibble(encounters_wide[,5:12]) %>%
-  column_to_rownames(., var = "full_plot_name")
+life_dat <- filter(as_tibble(encounters_wide), treatment == 'CTL')  %>%
+  column_to_rownames(., var = "full_plot_name") %>%
+  select(., c(FORB:SEVER))
 
 #Identify the columns that contains the descriptive/environmental data (dataframe 2)
-chr_dat <- encounters_wide[,1:5]
+chr_dat <- filter(encounters_wide, treatment == 'CTL')[,1:5]
 
-#ordination by NMDS
+#Run ordination by NMDS
 NMDS <- metaMDS(life_dat, k = 2, trymax = 100)
 NMDS
 stressplot(NMDS)
 
-#########################
-#Data visualisation (THIS IS AN UPDATED VERSION OF THE SCRIPT, NOW USING GGPLOT)
+#Check assumptions and test for differences ----
+
+#Check assumption of homogeneity of multivariate dispersion
+distances_data <- vegdist(life_dat)
+anova(betadisper(distances_data, chr_dat$subsite))
+
+#Testing for differences between the groups
+ano <- anosim(life_dat, chr_dat$year, distance = "bray", permutations = 9999)
+ano
+
+
+#Data visualisation ----
 
 #Extract the axes scores
 plot_dat <- (scores(NMDS)$sites) %>%
@@ -55,17 +68,17 @@ plot_theme <-   theme_pubr() +
     legend.box.margin = margin(t = -3, b = -10, l = -22, unit = "pt"),
                       legend.key.size = unit(1, 'lines'),
                       legend.text = element_text(size = 8),
-                      legend.title = element_text(size = 8, face = 'bold'),
+                      legend.title = element_text(size = 8, ),
                       plot.title = element_text(size = 10, vjust = 2, face = 'bold', margin = margin(t = 3, unit = 'pt')),
                       plot.title.position = "plot",
-                      axis.title.x = element_text(size = 8, face = 'bold'),
+                      axis.title.x = element_text(size = 8,),
                       axis.text.x = element_text(size = 8),
-                      axis.title.y = element_text(size = 8, face = 'bold'),
+                      axis.title.y = element_text(size = 8,),
                       axis.text.y = element_text(size = 8),
                       axis.line = element_line(colour = 'black', size = 0.3),)
 
 nmds_plot <- ggplot()+
-  ggtitle("NMDS of life form abundance") +
+  ggtitle("nMDS of life form abundance in CTL plots") +
   stat_ellipse(data = plot_dat, aes(x=NMDS1, y=NMDS2, color = subsite, fill = subsite), level = 0.75, geom = "polygon", show.legend=FALSE)+
   geom_point(data = plot_dat, aes(x=NMDS1, y=NMDS2, color = subsite, fill = subsite), shape = 21, color = 'black')+
   scale_color_manual(values = c('#F3E086','#BED4F1'),
@@ -80,35 +93,10 @@ nmds_plot <- ggplot()+
   
 nmds_plot
 
-nmds_plot_all_yrs <- ggplot()+
-  geom_point(data = plot_dat, aes(x=NMDS1, y=NMDS2, color = subsite, 
-                                  fill = subsite, shape = as.factor(year)))+
-  stat_ellipse(data = plot_dat, aes(x=NMDS1, y=NMDS2, color = subsite, fill = subsite), level = 0.75, geom = "polygon", alpha = 0.4)+
-  theme_pubr()+
-  scale_shape_manual(values = c(15,16,17,18),
-                     name = 'Year')+
-  scale_color_manual(values = c('lightgoldenrod3','lightsteelblue3'),
-                     labels = c("Dry", "Wet"),
-                     name = 'Subsite')+
-  scale_fill_manual(values = c('lightgoldenrod3','lightsteelblue3'),
-                    labels = c("Dry", "Wet"),
-                    name = 'Subsite')+
-  #facet_wrap(~year)+
-  ggtitle("NMDS of life form abundance") +
-  theme(plot.title = element_text(hjust = 0.5))+
-  theme(legend.position="right")+
-  geom_text(data=labels, aes(x = NMDS1, y = NMDS2, label = lifeform), 
-            hjust = 0.5,  vjust = 0.5,position = position_fill(vjust = 0.5), size = 3)
-
-nmds_plot_all_yrs
+#Export size: 4 x 4 
+ggsave("~/Desktop/nmds_plot.tiff", width = 3.5, height = 4, units = 'in', dpi = 400)
+ggsave("~/Desktop/nmds_plot.pdf", width = 3.5, height = 4, units = 'in')
 
 
 
-#####################
-#Check assumption of homogeneity of multivariate dispersion
-distances_data <- vegdist(life_dat)
-anova(betadisper(distances_data, chr_dat$subsite))
-
-#Bootstrapping and testing for differences between the groups
-fit <- adonis(data_1 ~ Habitat, data=data_2, permutations=999, method="bray")
 
