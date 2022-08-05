@@ -7,11 +7,13 @@ library(tidylog)
 library(ggplot2)
 library(ggsci)
 library(ggthemes)
+library(sjPlot)
 library(stringr)
 #install.packages("glmmTMB", type = "source")
 library(glmmTMB)
 library(performance)
 library(bbmle)
+library(cowplot)
 
 #READ DATA ----
 data <- read.csv("Point Frame/plot_data_fin.csv") 
@@ -40,6 +42,26 @@ sdeci <- filter(mean_height_merge, lifeform == 'SDECI')
 sever <- filter(mean_height_merge, lifeform == 'SEVER')
 forb <- filter(mean_height_merge, lifeform == 'FORB')
 
+#Set theme for plots
+plot_theme <-   theme_few() + 
+  theme(legend.position = "top",
+        legend.justification = c(0,-1),
+        legend.box.margin = margin(t = -5, b = -10, l = -6, unit = "pt"),
+        legend.key.size = unit(1, 'lines'),
+        legend.text = element_text(size = 8),
+        legend.title = element_text(size = 8),
+        plot.title = element_text(size = 10, vjust = 1, face = 'bold', margin = margin(t = 2, unit = 'pt')),
+        plot.title.position = "plot",
+        axis.title.x = element_text(size = 8),
+        axis.text.x = element_text(size = 8),
+        axis.title.y = element_text(size = 8),
+        axis.text.y = element_text(size = 8),
+        axis.line = element_line(colour = 'black', size = 0),
+        strip.text.x = element_text(size = 8, hjust = 0, margin = margin(t = 4, b = 4, l = 0, unit = 'pt')),
+        panel.border = element_rect(size = .4),
+        axis.ticks = element_line(size = 0.3, ),
+        axis.ticks.length = unit(1.5, "pt"),)
+
 #AVERAGE HEIGHT ANALYSIS ----
 #GRAMINOIDS ----
 #Plot of the distribution of observations
@@ -47,7 +69,7 @@ ggplot(gram, aes(x = as.factor(year), y = mean_height, fill = treatment)) +
   geom_boxplot()+
   #geom_histogram(position = "identity", alpha = 0.7, binwidth = 1)+
   facet_grid(~subsite)+
-  theme_bw()
+  plot_theme
 
 gram_subsite_mod <- glmmTMB(mean_height ~ subsite
                             + (1|plot_pair/plot) + (1|year_scale),
@@ -164,5 +186,60 @@ summary(wet_forb_mod)
 check_model(wet_forb_mod)
 sjPlot::plot_model(wet_forb_mod)
 sjPlot::plot_model(wet_forb_mod, type = "int")
+
+
+#Plotting for paper figures ----
+wet_shrub_plot <- sjPlot::plot_model(wet_sdeci_mod,
+                                      axis.labels=c("Treatment [OTC] * Year", "Year", "Treatment [OTC]"),
+                                      show.values=TRUE, show.p=TRUE,
+                                      title="Ave. height - Deciduous shrubs",
+                                      vline.color = 'light grey',
+                                      value.size = 3,
+                                      size = 10,
+                                      dot.size = 2,
+                                      line.size = 0.5,
+                                     value.offset = .3)+
+  scale_color_manual(values = c("#148335", "#B765A5"))+
+  plot_theme
+
+wet_shrub_plot
+
+wet_forb_plot <- sjPlot::plot_model(wet_forb_mod, 
+                                     axis.labels=c("Treatment [OTC] * Year", "Year", "Treatment [OTC]"),
+                                     show.values=TRUE, show.p=TRUE,
+                                     title="Ave. height - Forbs",
+                                     vline.color = 'light grey',
+                                     value.size = 3,
+                                     size = 10,
+                                     dot.size = 2,
+                                     line.size = 0.5,
+                                     value.offset = .3)+
+  scale_color_manual(values = c("#148335", "#B765A5"))+
+  plot_theme+
+  theme(axis.text.y=element_blank())
+
+wet_forb_plot
+
+plot_row <- cowplot::plot_grid(wet_shrub_plot, wet_forb_plot,
+                               rel_widths = c(1.65,1))
+
+plot_row
+
+title <- ggdraw() + 
+  draw_label(
+    "Estimated effects of treatment (OTC) and time (scaled year) on \naverage life form height in wet plots",
+    fontface = 'bold',
+    x = 0,
+    hjust = 0,
+    size = 10)
+
+plot_grid(
+  title, plot_row,
+  ncol = 1,
+  rel_heights = c(0.09, 1)) # rel_heights values control vertical title margins
+
+
+
+
 
 

@@ -16,9 +16,9 @@ plot_theme <-   theme_few() +
         legend.title = element_text(size = 8, face = 'bold'),
         plot.title = element_text(size = 10, vjust = 2, face = 'bold', margin = margin(t = 3, unit = 'pt')),
         plot.title.position = "plot",
-        axis.title.x = element_text(size = 8, face = 'bold'),
+        axis.title.x = element_text(size = 8),
         axis.text.x = element_text(size = 8),
-        axis.title.y = element_text(size = 8, face = 'bold'),
+        axis.title.y = element_text(size = 8),
         axis.text.y = element_text(size = 8),
         axis.line = element_line(colour = 'black', size = 0),
         strip.text.x = element_text(size = 8),
@@ -27,7 +27,7 @@ plot_theme <-   theme_few() +
         axis.ticks.length = unit(1.5, "pt"))
 
 ggplot(mean_temp, aes(x = year, y = t_ave))+
-  ggtitle("Average monthly temperatures from 1981 to 2021")+
+  #ggtitle("Average monthly temperatures from 1981 to 2021")+
   geom_rect(
     fill = "#E5EDF8", color = NA,
     xmin = 2008,
@@ -35,11 +35,12 @@ ggplot(mean_temp, aes(x = year, y = t_ave))+
     ymin = -Inf,
     ymax = Inf)+
   geom_smooth(size = 0.5, fill = '#FFBBFF', color = '#B765A5')+
+  #geom_point(size = .1, fill = 'black')+
   geom_line(size = 0.2)+
   scale_x_continuous(breaks = c(1980, 2000, 2020))+
   facet_wrap(~month_long, scales = "free_y")+
   ylab('Temperature (°C)')+
-  xlab('Year')+
+  xlab('')+
   plot_theme
 
 #4 x 6 export

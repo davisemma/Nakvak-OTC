@@ -164,3 +164,4 @@ summary(wet_forb_mod)
 check_model(wet_forb_mod)
 sjPlot::plot_model(wet_forb_mod)
 
+plot(wet_forb_mod)

@@ -2,6 +2,7 @@ rm(list=ls())
 library(tidyverse)
 library(tidylog)
 library(lubridate)
+library(ggthemes)
 
 setwd("Data")
 
@@ -36,11 +37,26 @@ ground_month_select <- filter(ground, month(date) == 7 | month(date) == 8)
 ground_air_merge <- merge(ground_month_select, air, all.x = TRUE)%>%
   mutate(diff_sa = t_ground - t_air) #How much warmer is ground than air on a given day? (if+)
 
-ggplot(ground_air_merge, aes(x = year, y = diff_sa, color = treatment))+
-  geom_point()+
-  geom_smooth()+
-  facet_wrap(~subsite)+
-  ylim(-2,2)
+#Plotting 
+plot_theme <-   theme_few() + 
+  theme(legend.position = "top",
+        legend.justification = c(0,-1),
+        legend.box.margin = margin(t = -5, b = -15, l = -6, unit = "pt"),
+        legend.background = element_rect(fill = NA, color = NA),
+        legend.key.size = unit(1, 'lines'),
+        legend.text = element_text(size = 8),
+        legend.title = element_text(size = 8),
+        plot.title = element_text(size = 10, vjust = 2, face = 'bold', margin = margin(t = 3, unit = 'pt')),
+        plot.title.position = "plot",
+        axis.title.x = element_text(size = 8),
+        axis.text.x = element_text(size = 8),
+        axis.title.y = element_text(size = 8),
+        axis.text.y = element_text(size = 8),
+        axis.line = element_line(colour = 'black', size = 0),
+        strip.text.x = element_text(size = 8, hjust = 0, margin = margin(t = 4, b = 4, l = 0, unit = 'pt')),
+        panel.border = element_rect(size = .3),
+        axis.ticks = element_line(size = 0.3, ),
+        axis.ticks.length = unit(1.5, "pt"),)
 
 ground_air_summary <- ground_air_merge %>%
   filter(!is.na(diff_sa)) %>%
@@ -50,24 +66,6 @@ ground_air_summary <- ground_air_merge %>%
   mutate(plot_num = substr(plot, 3, 4)) %>%
   filter(., n_obs > 55) #Select plots with > 90% data avail
 
-plot_theme <-   theme_few() + 
-  theme(legend.position = "top",
-        legend.justification = c(0,-1),
-        legend.box.margin = margin(t = -5, b = -10, l = -6, unit = "pt"),
-        legend.key.size = unit(1, 'lines'),
-        legend.text = element_text(size = 8),
-        legend.title = element_text(size = 8, face = 'bold'),
-        plot.title = element_text(size = 10, vjust = 2, face = 'bold', margin = margin(t = 3, unit = 'pt')),
-        plot.title.position = "plot",
-        axis.title.x = element_text(size = 8, face = 'bold'),
-        axis.text.x = element_text(size = 8),
-        axis.title.y = element_text(size = 8, face = 'bold'),
-        axis.text.y = element_text(size = 8),
-        axis.line = element_line(colour = 'black', size = 0),
-        strip.text.x = element_text(size = 8, face = 'bold', hjust = 0, margin = margin(t = 4, b = 4, l = 0, unit = 'pt')),
-        panel.border = element_rect(size = .4),
-        axis.ticks = element_line(size = 0.3, ),
-        axis.ticks.length = unit(1.5, "pt"),)
 
 facet_labels <- as_labeller(c('Dry' = 'Dry plots', 'Wet' = 'Wet plots'))
 
@@ -111,12 +109,16 @@ ggplot(otc_effect, aes(x = as.integer(year), y = ave_OTC_effect, color = subsite
   theme_bw()+
   scale_fill_manual(values = c("#F3E086", "#BED4F1"), name = 'Moisture class')+
   scale_color_manual(values = c("#F3E086", "#BED4F1"), name = 'Moisture class')+
-  scale_x_continuous(breaks = c(2012, 2014, 2016, 2018, 2020))+
-  xlim(2012, 2020)+
   ylab('Average effect (°C)')+
-  xlab('Year')+
+  xlab('')+
   ggtitle('Effect of OTC on summer GST by soil moisutre class')+
-  plot_theme
+  plot_theme+
+  scale_x_continuous(breaks = c(2012, 2013, 2014, 2015, 2016, 2017, 2018),
+                     labels = c(2012, '', 2014, '', 2016, '', 2018),
+                     limits = c(2012, 2018))
+
+#export 4 x 4 inches
+
 
 #1. The difference in OTC and CTL is relatively constant over time, with offset of ~0.75
 #2. At beginning, OTCs have cooler soil than air in wet plots relative to controls, over time this changes to warmer soil than air
@@ -177,7 +179,7 @@ snow_day_complete <- t_var %>%
 
 ggplot(snow_day_complete, aes(x = as.factor(year), y = n_snow_days , fill = treatment))+
   ggtitle("Number of snow days per year")+
-  geom_boxplot(size = .3, outlier.size = 0.75, )+
+  geom_boxplot(size = .3, outlier.size = 0.75, position = position_dodge2(preserve = "single"))+
   scale_x_discrete(breaks=seq(2010, 2020, 2))+
   scale_fill_manual(values = c("plum1", 'seagreen3'), name = 'Treatment')+
   labs(y = '# Snow days',
@@ -211,18 +213,18 @@ snow_offset <- t_var %>%
   mutate(doy_offset = yday(offset_date))
 
 
-snow_duration <- merge(select(snow_offset, c("plot", "year", "year_plot", "subsite", "treatment", "doy_offset")),
-           select(snow_onset, c("plot", "year", "year_plot", "subsite", "treatment", "doy_onset")), all.x = TRUE) %>%
+snow_duration <- merge(dplyr::select(snow_offset, c("plot", "year", "year_plot", "subsite", "treatment", "doy_offset")),
+           dplyr::select(snow_onset, c("plot", "year", "year_plot", "subsite", "treatment", "doy_onset")), all.x = TRUE) %>%
   mutate(snow_free = abs(doy_offset - doy_onset))
 
 ###Still possible that big gaps could lead to skewed detection of onset and offset
 
 ggplot(snow_duration, aes(x = as.factor(year), y = snow_free , fill = treatment))+
   ggtitle("Duration of snow free period")+
-  geom_boxplot(size = .3, outlier.size = 0.75, )+
+  geom_boxplot(size = .2, outlier.size = 0.5, position = position_dodge2(preserve = "single"))+
   scale_fill_manual(values = c("plum1", 'seagreen3'), name = 'Treatment')+
   labs(y = '# Days',
-       x = 'Year')+
+       x = '')+
   facet_wrap(~subsite, labeller = facet_labels)+
   scale_x_discrete(breaks=seq(2010, 2020, 2))+
   plot_theme

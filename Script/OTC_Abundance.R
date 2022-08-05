@@ -37,6 +37,9 @@ encounters_merge <- merge(encounters, holders, all.y = TRUE) %>% #merge w 'holde
          lifeform = as.factor(lifeform),
          year_scale = scale(year)) #converted year to z-score for modelling
 
+#TRIAL without 2008 observations
+#encounters_merge <- filter(encounters_merge, year != 2008)
+
 #Create a dataframe for each lifeform
 gram <- filter(encounters_merge, lifeform == 'GRAM')
 sdeci <- filter(encounters_merge, lifeform == 'SDECI')
@@ -53,12 +56,12 @@ plot_theme <-   theme_few() +
         legend.box.margin = margin(t = -5, b = -15, l = -6, unit = "pt"),
         legend.key.size = unit(1, 'lines'),
         legend.text = element_text(size = 8),
-        legend.title = element_text(size = 8, face = 'bold'),
+        legend.title = element_text(size = 8,),
         plot.title = element_text(size = 10, vjust = 2, face = 'bold', margin = margin(t = 3, unit = 'pt')),
         plot.title.position = "plot",
-        axis.title.x = element_text(size = 8, face = 'bold'),
+        axis.title.x = element_text(size = 8),
         axis.text.x = element_text(size = 8),
-        axis.title.y = element_text(size = 8, face = 'bold'),
+        axis.title.y = element_text(size = 8),
         axis.text.y = element_text(size = 8),
         axis.line = element_line(colour = 'black', size = 0),
         strip.text.x = element_text(size = 8, face = 'bold', hjust = 0, margin = margin(t = 4, b = 4, l = 0, unit = 'pt')),
@@ -482,3 +485,144 @@ sjPlot::plot_model(wet_sever_nb_mod)
 sjPlot::plot_model(wet_sever_nb_mod, type = 'int')
 
 #----END
+
+#Plotting effects - dry plots
+dry_lichen_plot <- sjPlot::plot_model(dry_lichen_nb_mod,
+                                     axis.labels=c("Treatment [OTC] * Year", "Year", "Treatment [OTC]"),
+                                     show.values=TRUE, show.p=TRUE,
+                                     title="Lichen",
+                                     vline.color = 'light grey',
+                                     value.size = 3,
+                                     size = 10,
+                                     dot.size = 2,
+                                     line.size = 0.5,
+                                     value.offset = .3)+
+  scale_color_manual(values = c("#148335", "#B765A5"))+
+  plot_theme
+
+dry_lichen_plot
+
+dry_moss_plot <- sjPlot::plot_model(dry_moss_nb_mod, 
+                                    axis.labels=c("Treatment [OTC] * Year", "Year", "Treatment [OTC]"),
+                                    show.values=TRUE, show.p=TRUE,
+                                    title="Moss",
+                                    vline.color = 'light grey',
+                                    value.size = 3,
+                                    size = 10,
+                                    dot.size = 2,
+                                    line.size = 0.5,
+                                    value.offset = .3)+
+  scale_color_manual(values = c("#148335", "#B765A5"))+
+  plot_theme+
+  theme(axis.text.y=element_blank())
+
+dry_moss_plot
+
+plot_row <- cowplot::plot_grid(dry_lichen_plot, dry_moss_plot,
+                               rel_widths = c(1.47,1))
+
+plot_row
+
+title <- ggdraw() + 
+  draw_label(
+    "Estimated effects of treatment (OTC) and time (scaled year) on abundance in dry plots",
+    fontface = 'bold',
+    x = 0,
+    hjust = 0,
+    size = 10)
+
+plot_grid(
+  title, plot_row,
+  ncol = 1,
+  rel_heights = c(0.09, 1)) # rel_heights values control vertical title margins
+
+
+#Plotting effects - wet plots
+wet_sdeci_plot <- sjPlot::plot_model(wet_sdeci_nb_mod,
+                                      axis.labels=c("Treatment [OTC] * Year", "Year", "Treatment [OTC]"),
+                                      show.values=TRUE, show.p=TRUE,
+                                      title="Deciduous shrub",
+                                      vline.color = 'light grey',
+                                      value.size = 3,
+                                      size = 10,
+                                      dot.size = 2,
+                                      line.size = 0.5,
+                                      value.offset = .3)+
+  scale_color_manual(values = c("#148335", "#B765A5"))+
+  plot_theme
+
+wet_sdeci_plot
+
+wet_sever_plot <- sjPlot::plot_model(wet_sever_nb_mod, 
+                                    axis.labels=c("Treatment [OTC] * Year", "Year", "Treatment [OTC]"),
+                                    show.values=TRUE, show.p=TRUE,
+                                    title="Evergreen shrub",
+                                    vline.color = 'light grey',
+                                    value.size = 3,
+                                    size = 10,
+                                    dot.size = 2,
+                                    line.size = 0.5,
+                                    value.offset = .3)+
+  scale_color_manual(values = c("#148335", "#B765A5"))+
+  plot_theme+
+  theme(axis.text.y=element_blank())
+
+wet_sever_plot
+
+wet_lichen_plot <- sjPlot::plot_model(wet_lichen_p_mod, 
+                                     axis.labels=c("Treatment [OTC] * Year", "Year", "Treatment [OTC]"),
+                                     show.values=TRUE, show.p=TRUE,
+                                     title="Lichen",
+                                     vline.color = 'light grey',
+                                     value.size = 3,
+                                     size = 10,
+                                     dot.size = 2,
+                                     line.size = 0.5,
+                                     value.offset = .3)+
+  scale_color_manual(values = c("#148335", "#B765A5"))+
+  plot_theme
+
+wet_lichen_plot
+
+
+wet_moss_plot <- sjPlot::plot_model(wet_moss_nb_mod, 
+                                     axis.labels=c("Treatment [OTC] * Year", "Year", "Treatment [OTC]"),
+                                     show.values=TRUE, show.p=TRUE,
+                                     title="Moss",
+                                     vline.color = 'light grey',
+                                     value.size = 3,
+                                     size = 10,
+                                     dot.size = 2,
+                                     line.size = 0.5,
+                                     value.offset = .3)+
+  scale_color_manual(values = c("#148335", "#B765A5"))+
+  plot_theme+
+  theme(axis.text.y=element_blank())
+
+wet_moss_plot
+
+plot_row <- cowplot::plot_grid(wet_sdeci_plot, wet_sever_plot,
+                               wet_lichen_plot, wet_moss_plot,
+                               rel_widths = c(1.47,1,
+                                              1.47,1))
+plot_row
+
+title <- ggdraw() + 
+  draw_label(
+    "Estimated effects of treatment (OTC) and time (scaled year) on abundance in wet plots",
+    fontface = 'bold',
+    x = 0,
+    hjust = 0,
+    size = 10)
+
+plot_grid(
+  title, plot_row,
+  ncol = 1,
+  rel_heights = c(0.09, 1, 1)) # rel_heights values control vertical title margins
+
+
+
+
+
+
+
