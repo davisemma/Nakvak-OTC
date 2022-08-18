@@ -16,13 +16,15 @@ library(bbmle)
 library(cowplot)
 
 #READ DATA ----
-data <- read.csv("Point Frame/plot_data_fin.csv") 
-holders <- read.csv("Point Frame/plot_year_genus_fin.csv") #file with all lifeform x plot combinations
+data <- read.csv("Point Frame/plot_data_QC_ELD.csv") 
+holders <- read.csv("Point Frame/plot_year_genus_fin.csv") %>%
+  filter(., year != 2008)#file with all lifeform x plot combinations
 
 #FROMAT DATA ----
 #Calculate mean encounters for each lifeform x plot
 mean_height <- data %>%
   filter(., status == "LIVE") %>%
+  filter(., year != 2008) %>%
   mutate(height = replace_na(height, 0)) %>%
   group_by(subsite, treatment, plot, year, lifeform) %>%
   summarise(mean_height = mean(height)) 

@@ -6,13 +6,15 @@ library("tidyverse")
 
 #READ DATA ----
 setwd("Data")
-data <- read.csv("Point Frame/plot_data_fin.csv") 
-holders <- read.csv("Point Frame/plot_year_genus_fin.csv") #file with all lifeform x plot combinations
+data <- read.csv("Point Frame/plot_data_QC_ELD.csv") 
+holders <- read.csv("Point Frame/plot_year_genus_fin.csv") %>%
+  filter(., year != 2008)#file with all lifeform x plot combinations
 
 #FROMAT DATA ----
 #Calculate n encounters for each lifeform x plot
 encounters <- data %>% 
   filter(., status == 'LIVE') %>%
+  filter(., year != 2008) %>%
   group_by(subsite, treatment, plot, year, lifeform) %>%
   summarise(encounters = n()) 
 
@@ -47,9 +49,8 @@ distances_data <- vegdist(life_dat)
 anova(betadisper(distances_data, chr_dat$subsite))
 
 #Testing for differences between the groups
-ano <- anosim(life_dat, chr_dat$year, distance = "bray", permutations = 9999)
+ano <- anosim(life_dat, chr_dat$subsite, distance = "bray", permutations = 9999)
 ano
-
 
 #Data visualisation ----
 
@@ -95,7 +96,7 @@ nmds_plot
 
 #Export size: 4 x 4 
 ggsave("~/Desktop/nmds_plot.tiff", width = 3.5, height = 4, units = 'in', dpi = 400)
-ggsave("~/Desktop/nmds_plot.pdf", width = 3.5, height = 4, units = 'in')
+ggsave("~/Desktop/nmds_plot.pdf", width = 4, height = 3.5, units = 'in')
 
 
 

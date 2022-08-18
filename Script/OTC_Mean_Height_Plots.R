@@ -23,6 +23,7 @@ dry <- sjPlot::plot_models(dry_gram_mod,
                            dry_forb_mod,
                            dry_sdeci_mod,
                     dry_sever_mod,
+                    dry_canopy_mod,
                     title="Dry plots",
                     axis.labels=c("Treatment [OTC]\n* Year", "Year", "Treatment\n[OTC]"),
                     p.shape = TRUE,
@@ -35,7 +36,7 @@ dry <- sjPlot::plot_models(dry_gram_mod,
                     line.size = 0.5,
                     spacing = 0.65,
                     axis.lim = c(-3, 3))+
-  scale_color_manual(values = c('#A4A4A6', '#5D8A55', '#EF9FEF', '#ECD982'))+
+  scale_color_manual(values = c('#403F3F', '#A4A4A6', '#5D8A55', '#EF9FEF', '#ECD982'))+
   plot_theme+
   theme(plot.margin = margin(3, 6, 3, 6))+
   scale_shape_manual(values = c(1, 19))
@@ -44,6 +45,7 @@ wet <- sjPlot::plot_models(wet_gram_mod,
                            wet_forb_mod,       
                     wet_sdeci_mod,
                     wet_sever_mod,
+                    wet_canopy_mod,
                     title="Wet plots",
                     axis.labels=c("", "", ""),
                     p.shape = TRUE,
@@ -54,9 +56,8 @@ wet <- sjPlot::plot_models(wet_gram_mod,
                     value.size = 3,
                     dot.size = 2,
                     line.size = 0.5,
-                    spacing = 0.65,
-                    axis.lim = c(-3, 3))+
-  scale_color_manual(values = c('#A4A4A6', '#5D8A55', '#EF9FEF', '#ECD982'))+
+                    spacing = 0.65)+
+  scale_color_manual(values = c("#403F3F", '#A4A4A6', '#5D8A55', '#EF9FEF', '#ECD982', 'hot pink'))+
   plot_theme+
   theme(plot.margin = margin(3, 6, 3, 6))+
   scale_shape_manual(values = c(1, 19))
@@ -66,6 +67,7 @@ fake <- sjPlot::plot_models(wet_gram_mod,
                             wet_forb_mod,       
                             wet_sdeci_mod,
                             wet_sever_mod,
+                            wet_canopy_mod,
                            title="fakers",
                            axis.labels=c("Treatment [OTC]\n* Year", "Year", "Treatment\n[OTC]"),
                            vline.color = 'light grey',
@@ -76,8 +78,8 @@ fake <- sjPlot::plot_models(wet_gram_mod,
                            legend.title = 'Lifeform',
                            p.shape = TRUE,
                            p.threshold = c(0.05),
-                           m.labels = c('Graminoid', 'Forb', 'Deciduous shrub', 'Evergreen shrub', 'Lichen', 'Moss'))+
-  scale_color_manual(values = c('#A4A4A6', '#5D8A55', '#EF9FEF', '#ECD982'))+
+                           m.labels = c('Graminoid', 'Forb', 'Deciduous shrub', 'Evergreen shrub', 'Max. canopy height'))+
+  scale_color_manual(values = c("#403F3F", '#A4A4A6', '#5D8A55', '#EF9FEF', '#ECD982'))+
   plot_theme+
   theme(plot.margin = margin(6, 0, 6, 0))+
   scale_shape_manual(values = c(1, 19))
@@ -89,3 +91,4 @@ legend <- get_legend(fake + theme(legend.position = 'top',
                                   legend.title = element_text(size = 8),
                                   legend.justification = "left"))
 cowplot::plot_grid(legend, data, ncol = 1, rel_heights = c(0.1, 1))
+

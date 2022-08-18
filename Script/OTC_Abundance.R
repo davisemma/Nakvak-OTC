@@ -17,13 +17,15 @@ library(bbmle)
 getwd()
 setwd("Data")
 #READ DATA ----
-data <- read.csv("Point Frame/plot_data_fin.csv") 
-holders <- read.csv("Point Frame/plot_year_genus_fin.csv") #file with all lifeform x plot combinations
+data <- read.csv("Point Frame/plot_data_QC_ELD.csv") 
+holders <- read.csv("Point Frame/plot_year_genus_fin.csv") %>%
+  filter(., year != 2008)#file with all lifeform x plot combinations
 
 #FROMAT DATA ----
 #Calculate n encounters for each lifeform x plot
 encounters <- data %>% 
   filter(., status == 'LIVE') %>% #select only 'live' encounters
+  filter(., year != 2008) %>%
   group_by(subsite, treatment, plot, year, lifeform) %>%
   summarise(encounters = n()) #number of encounters of each lifeform in each plot
 
@@ -36,9 +38,6 @@ encounters_merge <- merge(encounters, holders, all.y = TRUE) %>% #merge w 'holde
          treatment = as.factor(treatment),
          lifeform = as.factor(lifeform),
          year_scale = scale(year)) #converted year to z-score for modelling
-
-#TRIAL without 2008 observations
-#encounters_merge <- filter(encounters_merge, year != 2008)
 
 #Create a dataframe for each lifeform
 gram <- filter(encounters_merge, lifeform == 'GRAM')
@@ -95,28 +94,31 @@ dry_gram_p_mod <- glmmTMB(encounters ~ treatment*year_scale
 
 check_zeroinflation(dry_gram_p_mod)
 check_overdispersion(dry_gram_p_mod)
-#overdispersion AND zero inflation present
+check_model(dry_gram_p_mod)
+#minor zero inflation present
 #RUN ZAP
 dry_gram_zap_mod <- glmmTMB(encounters ~ treatment*year_scale
                                  + (1|plot_pair/plot) + (1|year_scale), ziformula = ~1,
                                  family = truncated_poisson, data = filter(gram, subsite == 'NAKVAKDRY'))
-check_zeroinflation(dry_gram_zap_mod)
+check_zeroinflation(dry_gram_zap_mod) #worse zero inflation
 check_overdispersion(dry_gram_zap_mod)
+check_model(dry_gram_zap_mod)
 #ZAP fixes dispersion but is a worse fit for zeros; try nbinom1 to address overdispersion
+
 dry_gram_nb_mod <- glmmTMB(encounters ~ treatment*year_scale
                              + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
                              family = nbinom1, data = filter(gram, subsite == 'NAKVAKDRY'))
 
 check_overdispersion(dry_gram_nb_mod)
 check_zeroinflation(dry_gram_nb_mod)
-#nbinom1 fixes overdispersion and is a better fit for 0's. Compare models 
+check_model(dry_gram_nb_mod)
 
 #Model comparison; ZAP and NB 
-AICtab(dry_gram_p_mod, dry_gram_nb_mod)
+AICtab(dry_gram_p_mod, dry_gram_zap_mod, dry_gram_nb_mod)
 
-#nb model is most parsimonious
-summary(dry_gram_nb_mod)
-sjPlot::plot_model(dry_gram_nb_mod)
+#p model seems most parsimonious and nb is not a big improvement
+summary(dry_gram_p_mod)
+sjPlot::plot_model(dry_gram_p_mod)
 
 #WET - GRAM
 wet_gram_p_mod <- glmmTMB(encounters ~ treatment*year_scale
@@ -125,7 +127,7 @@ wet_gram_p_mod <- glmmTMB(encounters ~ treatment*year_scale
 
 check_zeroinflation(wet_gram_p_mod) #no zeros 
 check_overdispersion(wet_gram_p_mod)
-#No indication of zero inflation in wet data, so choose between poiss and nbino
+#data are overdispersed, no zeros
 wet_gram_nb_mod <- glmmTMB(encounters ~ treatment*year_scale
                              + (1|plot_pair/plot) + (1|year_scale),
                              family = nbinom2, data = filter(gram, subsite == 'NAKVAKWET'))
@@ -169,8 +171,8 @@ check_zeroinflation(dry_lichen_p_mod) #No zeros observed
 
 dry_lichen_nb_mod<- glmmTMB(encounters ~ treatment*year_scale
                                + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
-                               family = nbinom2, data = filter(lichen, subsite == 'NAKVAKDRY'))
-#***Note: nbinom2
+                               family = nbinom1, data = filter(lichen, subsite == 'NAKVAKDRY'))
+
 check_overdispersion(dry_lichen_nb_mod)
 check_zeroinflation(dry_lichen_nb_mod)
 
@@ -216,7 +218,7 @@ sdeci_p_mod <- glmmTMB(encounters ~ treatment*year_scale
 
 check_overdispersion(sdeci_p_mod)
 check_zeroinflation(sdeci_p_mod)
-#overdispersion, weak underfitting of zeros; no visual zero inflation
+#overdispersion, no zeros
 sdeci_nb_mod <- glmmTMB(encounters ~ treatment*year_scale
                             + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
                             family = nbinom1, data = sdeci)
@@ -246,7 +248,7 @@ check_zeroinflation(wet_sdeci_p_mod) #no zeros in data, try nb model
 
 wet_sdeci_nb_mod <- glmmTMB(encounters ~ treatment*year_scale
                            + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
-                           family = nbinom2, data = filter(sdeci, subsite == 'NAKVAKWET'))
+                           family = nbinom1, data = filter(sdeci, subsite == 'NAKVAKWET'))
 
 check_overdispersion(wet_sdeci_nb_mod)
 
@@ -294,6 +296,7 @@ dry_moss_nb_mod <- glmmTMB(encounters ~ treatment*year_scale
 
 check_overdispersion(dry_moss_nb_mod)
 check_zeroinflation(dry_moss_nb_mod)
+
 
 dry_moss_zanb_mod <- glmmTMB(encounters ~ treatment*year_scale
                                + (1|plot_pair/plot) + (1|year_scale), ziformula = ~1,
@@ -348,14 +351,7 @@ dry_forb_p_mod <- glmmTMB(encounters ~ treatment*year_scale
                              family = poisson, data = filter(forb, subsite == 'NAKVAKDRY'))
 
 check_overdispersion(dry_forb_p_mod)
-check_zeroinflation(dry_forb_p_mod) #small zero inflation possibility
-
-dry_forb_zap_mod <- glmmTMB(encounters ~ treatment*year_scale
-                            + (1|plot_pair/plot) + (1|year_scale), ziformula = ~1,
-                            family = truncated_poisson, data = filter(forb, subsite == 'NAKVAKDRY'))
-
-check_overdispersion(dry_forb_zap_mod)
-check_zeroinflation(dry_forb_zap_mod) #regular poisson seems better fit
+check_zeroinflation(dry_forb_p_mod)
 
 AICtab(dry_forb_p_mod, dry_forb_zap_mod)
 #poisson good to go!
@@ -391,9 +387,9 @@ check_zeroinflation(wet_forb_zanb_mod)
 AICtab(wet_forb_p_mod, wet_forb_nb_mod,
        wet_forb_zap_mod, wet_forb_zanb_mod)
 
-summary(wet_forb_zanb_mod)
-sjPlot::plot_model(wet_forb_zanb_mod)
-sjPlot::plot_model(wet_forb_zanb_mod, type = "int")
+summary(wet_forb_nb_mod)
+sjPlot::plot_model(wet_forb_nb_mod)
+sjPlot::plot_model(wet_forb_nb_mod, type = "int")
 
 
 #SEVER 
@@ -454,7 +450,7 @@ wet_sever_p_mod <- glmmTMB(encounters ~ treatment*year_scale
                             family = poisson, data = filter(sever, subsite == 'NAKVAKWET'))
 
 check_overdispersion(wet_sever_p_mod)
-check_zeroinflation(wet_sever_p_mod) #small zero inflation possibility
+check_zeroinflation(wet_sever_p_mod)
 
 wet_sever_zap_mod <- glmmTMB(encounters ~ treatment*year_scale
                              + (1|plot_pair/plot) + (1|year_scale), ziformula = ~1,
@@ -480,149 +476,11 @@ check_zeroinflation(wet_sever_zanb_mod) #A bit worse zero modelling
 AICtab(wet_sever_p_mod, wet_sever_nb_mod,
        wet_sever_zap_mod)
 
-summary(wet_sever_nb_mod)
-sjPlot::plot_model(wet_sever_nb_mod)
-sjPlot::plot_model(wet_sever_nb_mod, type = 'int')
+summary(wet_sever_p_mod)
+sjPlot::plot_model(wet_sever_p_mod)
+sjPlot::plot_model(wet_sever_p_mod, type = 'int')
 
 #----END
-
-#Plotting effects - dry plots
-dry_lichen_plot <- sjPlot::plot_model(dry_lichen_nb_mod,
-                                     axis.labels=c("Treatment [OTC] * Year", "Year", "Treatment [OTC]"),
-                                     show.values=TRUE, show.p=TRUE,
-                                     title="Lichen",
-                                     vline.color = 'light grey',
-                                     value.size = 3,
-                                     size = 10,
-                                     dot.size = 2,
-                                     line.size = 0.5,
-                                     value.offset = .3)+
-  scale_color_manual(values = c("#148335", "#B765A5"))+
-  plot_theme
-
-dry_lichen_plot
-
-dry_moss_plot <- sjPlot::plot_model(dry_moss_nb_mod, 
-                                    axis.labels=c("Treatment [OTC] * Year", "Year", "Treatment [OTC]"),
-                                    show.values=TRUE, show.p=TRUE,
-                                    title="Moss",
-                                    vline.color = 'light grey',
-                                    value.size = 3,
-                                    size = 10,
-                                    dot.size = 2,
-                                    line.size = 0.5,
-                                    value.offset = .3)+
-  scale_color_manual(values = c("#148335", "#B765A5"))+
-  plot_theme+
-  theme(axis.text.y=element_blank())
-
-dry_moss_plot
-
-plot_row <- cowplot::plot_grid(dry_lichen_plot, dry_moss_plot,
-                               rel_widths = c(1.47,1))
-
-plot_row
-
-title <- ggdraw() + 
-  draw_label(
-    "Estimated effects of treatment (OTC) and time (scaled year) on abundance in dry plots",
-    fontface = 'bold',
-    x = 0,
-    hjust = 0,
-    size = 10)
-
-plot_grid(
-  title, plot_row,
-  ncol = 1,
-  rel_heights = c(0.09, 1)) # rel_heights values control vertical title margins
-
-
-#Plotting effects - wet plots
-wet_sdeci_plot <- sjPlot::plot_model(wet_sdeci_nb_mod,
-                                      axis.labels=c("Treatment [OTC] * Year", "Year", "Treatment [OTC]"),
-                                      show.values=TRUE, show.p=TRUE,
-                                      title="Deciduous shrub",
-                                      vline.color = 'light grey',
-                                      value.size = 3,
-                                      size = 10,
-                                      dot.size = 2,
-                                      line.size = 0.5,
-                                      value.offset = .3)+
-  scale_color_manual(values = c("#148335", "#B765A5"))+
-  plot_theme
-
-wet_sdeci_plot
-
-wet_sever_plot <- sjPlot::plot_model(wet_sever_nb_mod, 
-                                    axis.labels=c("Treatment [OTC] * Year", "Year", "Treatment [OTC]"),
-                                    show.values=TRUE, show.p=TRUE,
-                                    title="Evergreen shrub",
-                                    vline.color = 'light grey',
-                                    value.size = 3,
-                                    size = 10,
-                                    dot.size = 2,
-                                    line.size = 0.5,
-                                    value.offset = .3)+
-  scale_color_manual(values = c("#148335", "#B765A5"))+
-  plot_theme+
-  theme(axis.text.y=element_blank())
-
-wet_sever_plot
-
-wet_lichen_plot <- sjPlot::plot_model(wet_lichen_p_mod, 
-                                     axis.labels=c("Treatment [OTC] * Year", "Year", "Treatment [OTC]"),
-                                     show.values=TRUE, show.p=TRUE,
-                                     title="Lichen",
-                                     vline.color = 'light grey',
-                                     value.size = 3,
-                                     size = 10,
-                                     dot.size = 2,
-                                     line.size = 0.5,
-                                     value.offset = .3)+
-  scale_color_manual(values = c("#148335", "#B765A5"))+
-  plot_theme
-
-wet_lichen_plot
-
-
-wet_moss_plot <- sjPlot::plot_model(wet_moss_nb_mod, 
-                                     axis.labels=c("Treatment [OTC] * Year", "Year", "Treatment [OTC]"),
-                                     show.values=TRUE, show.p=TRUE,
-                                     title="Moss",
-                                     vline.color = 'light grey',
-                                     value.size = 3,
-                                     size = 10,
-                                     dot.size = 2,
-                                     line.size = 0.5,
-                                     value.offset = .3)+
-  scale_color_manual(values = c("#148335", "#B765A5"))+
-  plot_theme+
-  theme(axis.text.y=element_blank())
-
-wet_moss_plot
-
-plot_row <- cowplot::plot_grid(wet_sdeci_plot, wet_sever_plot,
-                               wet_lichen_plot, wet_moss_plot,
-                               rel_widths = c(1.47,1,
-                                              1.47,1))
-plot_row
-
-title <- ggdraw() + 
-  draw_label(
-    "Estimated effects of treatment (OTC) and time (scaled year) on abundance in wet plots",
-    fontface = 'bold',
-    x = 0,
-    hjust = 0,
-    size = 10)
-
-plot_grid(
-  title, plot_row,
-  ncol = 1,
-  rel_heights = c(0.09, 1, 1)) # rel_heights values control vertical title margins
-
-
-
-
 
 
 
