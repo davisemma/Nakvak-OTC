@@ -7,14 +7,17 @@ library("tidyverse")
 #READ DATA ----
 setwd("Data")
 data <- read.csv("Point Frame/plot_data_QC_ELD.csv") 
-holders <- read.csv("Point Frame/plot_year_genus_fin.csv") %>%
+holders <- read.csv("Point Frame/plot_year_genus_bryo.csv") %>%
   filter(., year != 2008)#file with all lifeform x plot combinations
 
 #FROMAT DATA ----
 #Calculate n encounters for each lifeform x plot
+#Remove non-living encounters, anything from 2008, create bryophyte class
 encounters <- data %>% 
   filter(., status == 'LIVE') %>%
   filter(., year != 2008) %>%
+  mutate(lifeform = str_replace(lifeform, 'MOSS', 'BRYOPHYTE'),
+         lifeform = str_replace(lifeform, 'LIVERWORT', 'BRYOPHYTE')) %>%
   group_by(subsite, treatment, plot, year, lifeform) %>%
   summarise(encounters = n()) 
 
@@ -32,7 +35,7 @@ encounters_wide <- pivot_wider(encounters_merge, names_from = lifeform, values_f
 #subset the dataframe on which to base the ordination (dataframe 1)
 life_dat <- filter(as_tibble(encounters_wide), treatment == 'CTL')  %>%
   column_to_rownames(., var = "full_plot_name") %>%
-  select(., c(FORB:SEVER))
+  dplyr::select(., c(BRYOPHYTE:SEVER))
 
 #Identify the columns that contains the descriptive/environmental data (dataframe 2)
 chr_dat <- filter(encounters_wide, treatment == 'CTL')[,1:5]
@@ -61,7 +64,7 @@ plot_dat <- (scores(NMDS)$sites) %>%
 
 labels <- scores(NMDS)$species %>%
   as_tibble(rownames = "lifeform") %>%
-  mutate(labels = c("FORB", "GRAM", "LICHEN", "LIVER", "MOSS", "SDECI", "SEVER"))
+  mutate(labels = c("BRYOPHYTE", "FORB", "GRAM", "LICHEN", "SDECI", "SEVER"))
 
 plot_theme <-   theme_pubr() + 
   theme(legend.position = "top",
@@ -89,7 +92,7 @@ nmds_plot <- ggplot()+
                     labels = c("Dry", "Wet"),
                     name = 'Plot moisture class')+
   geom_text(data=labels, aes(x = NMDS1, y = NMDS2, label = labels), 
-            hjust = 0.5,  vjust = 0.5,position = position_fill(vjust = 0.5), size = 2)+
+            hjust = 0,  vjust = 0, size = 2)+
   plot_theme
   
 nmds_plot

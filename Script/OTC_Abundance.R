@@ -18,7 +18,7 @@ getwd()
 setwd("Data")
 #READ DATA ----
 data <- read.csv("Point Frame/plot_data_QC_ELD.csv") 
-holders <- read.csv("Point Frame/plot_year_genus_fin.csv") %>%
+holders <- read.csv("Point Frame/plot_year_genus_bryo.csv") %>%
   filter(., year != 2008)#file with all lifeform x plot combinations
 
 #FROMAT DATA ----
@@ -26,6 +26,7 @@ holders <- read.csv("Point Frame/plot_year_genus_fin.csv") %>%
 encounters <- data %>% 
   filter(., status == 'LIVE') %>% #select only 'live' encounters
   filter(., year != 2008) %>%
+  mutate(lifeform = if_else(lifeform == "MOSS", "BRYOPHYTE", if_else(lifeform == "LIVERWORT", "BRYOPHYTE", lifeform))) %>%
   group_by(subsite, treatment, plot, year, lifeform) %>%
   summarise(encounters = n()) #number of encounters of each lifeform in each plot
 
@@ -47,6 +48,7 @@ lichen <- filter(encounters_merge, lifeform == 'LICHEN')
 forb <- filter(encounters_merge, lifeform == 'FORB')
 moss <- filter(encounters_merge, lifeform == 'MOSS')
 liverwort <- filter(encounters_merge, lifeform == 'LIVERWORT')
+bryo <- filter(encounters_merge, lifeform == 'BRYOPHYTE')
 
 #Plotting format - 
 plot_theme <-   theme_few() + 
@@ -76,16 +78,6 @@ ggplot(gram, aes(x = encounters, fill = treatment)) +
   facet_grid(year~subsite)+
   scale_fill_manual(values = c("plum1", 'seagreen3'), name = "Treatment")+
   plot_theme
-
-#Dry and wet seem to have very different distributions; test whether they could be modelled separately
-gram_subsite_mod <- glmmTMB(encounters ~ subsite
-               + (1|plot_pair/plot) + (1|year_scale),
-               family = nbinom1, data = gram) #nbinom1 best fit 
-
-check_model(gram_subsite_mod)
-summary(gram_subsite_mod)
-#Subsite has a strong, significant effect. 
-#Now will model counts separately for wet vs dry, deciding between model types along the way
 
 #DRY - GRAM
 dry_gram_p_mod <- glmmTMB(encounters ~ treatment*year_scale
@@ -481,6 +473,66 @@ sjPlot::plot_model(wet_sever_p_mod)
 sjPlot::plot_model(wet_sever_p_mod, type = 'int')
 
 #----END
+
+#BRYOPHYTE
+#Dry bryophyte ---
+dry_bryo_p_mod <- glmmTMB(encounters ~ treatment*year_scale
+                          + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
+                          family = poisson, data = filter(bryo, subsite == 'NAKVAKDRY'))
+
+check_overdispersion(dry_bryo_p_mod)
+check_zeroinflation(dry_bryo_p_mod)
+
+
+dry_bryo_nb_mod <- glmmTMB(encounters ~ treatment*year_scale
+                           + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
+                           family = nbinom1, data = filter(bryo, subsite == 'NAKVAKDRY'))
+
+check_overdispersion(dry_bryo_nb_mod) #improved dispersion
+check_zeroinflation(dry_bryo_nb_mod) #A bit worse zero modelling
+
+sjPlot::plot_model(dry_bryo_nb_mod, type = 'int')
+summary(dry_bryo_nb_mod)
+
+
+
+wet_bryo_p_mod <- glmmTMB(encounters ~ treatment*year_scale
+                           + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
+                           family = poisson, data = filter(bryo, subsite == 'NAKVAKWET'))
+
+check_overdispersion(wet_bryo_p_mod)
+check_zeroinflation(wet_bryo_p_mod)
+
+
+wet_bryo_nb_mod <- glmmTMB(encounters ~ treatment*year_scale
+                            + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
+                            family = nbinom1, data = filter(bryo, subsite == 'NAKVAKWET'))
+
+check_overdispersion(wet_bryo_nb_mod) #improved dispersion
+check_zeroinflation(wet_bryo_nb_mod) #A bit worse zero modelling
+
+sjPlot::plot_model(wet_bryo_nb_mod, type = 'int')
+summary(wet_bryo_nb_mod)
+#----END
+
+
+dry_bryo_p_mod <- glmmTMB(encounters ~ treatment*year_scale
+                          + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
+                          family = poisson, data = filter(bryo, subsite == 'NAKVAKDRY'))
+
+check_overdispersion(dry_bryo_p_mod)
+check_zeroinflation(dry_bryo_p_mod)
+
+
+dry_bryo_nb_mod <- glmmTMB(encounters ~ treatment*year_scale
+                           + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
+                           family = nbinom1, data = filter(bryo, subsite == 'NAKVAKDRY'))
+
+check_overdispersion(dry_bryo_nb_mod) #improved dispersion
+check_zeroinflation(dry_bryo_nb_mod) #A bit worse zero modelling
+
+sjPlot::plot_model(dry_bryo_nb_mod, type = 'int')
+summary(dry_bryo_nb_mod)
 
 
 

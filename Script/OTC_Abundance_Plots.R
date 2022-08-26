@@ -24,7 +24,7 @@ dry <- sjPlot::plot_models(dry_gram_p_mod,
                            dry_sdeci_p_mod,
                            dry_sever_nb_mod,
                            dry_lichen_nb_mod,
-                           dry_moss_nb_mod,
+                           dry_bryo_nb_mod,
                     title="Dry plots",
                     axis.labels=c("Treatment [OTC]\n* Year", "Year", "Treatment\n[OTC]"),
                     p.shape = TRUE,
@@ -47,7 +47,7 @@ wet <- sjPlot::plot_models(wet_gram_nb_mod,
                            wet_sdeci_nb_mod,
                            wet_sever_p_mod,
                            wet_lichen_p_mod,
-                           wet_moss_nb_mod,
+                           wet_bryo_nb_mod,
                     title="Wet plots",
                     axis.labels=c("", "", ""),
                     p.shape = TRUE,
@@ -71,7 +71,7 @@ fake <- sjPlot::plot_models(dry_gram_p_mod,
                             dry_sdeci_p_mod,
                             dry_sever_nb_mod,
                             dry_lichen_nb_mod,
-                            dry_moss_nb_mod,
+                            dry_bryo_nb_mod,
                            title="fakers",
                            axis.labels=c("Treatment [OTC]\n* Year", "Year", "Treatment\n[OTC]"),
                            vline.color = 'light grey',
@@ -81,7 +81,7 @@ fake <- sjPlot::plot_models(dry_gram_p_mod,
                            spacing = 0.65,
                            legend.title = 'Lifeform',
                            #p.shape = TRUE,
-                           m.labels = c('Graminoid', 'Forb', 'Deciduous shrub', 'Evergreen shrub', 'Lichen', 'Moss'),
+                           m.labels = c('Graminoid', 'Forb', 'Deciduous shrub', 'Evergreen shrub', 'Lichen', 'Bryophyte'),
                            p.threshold = c(0.05))+
   scale_color_manual(values = c('#85D1F0', '#B765A5', '#A4A4A6', '#5D8A55', '#EF9FEF', '#ECD982'))+
   plot_theme+
@@ -104,7 +104,7 @@ cowplot::plot_grid(legend, data, ncol = 1, rel_heights = c(0.2, 1))
 # dry_sdeci_p_mod,
 # dry_sever_nb_mod,
 # dry_lichen_nb_mod,
-# dry_moss_nb_mod,
+# dry_bryo_nb_mod,
 # 
 # #WET MODELS
 # wet_gram_nb_mod,
@@ -112,7 +112,7 @@ cowplot::plot_grid(legend, data, ncol = 1, rel_heights = c(0.2, 1))
 # wet_sdeci_nb_mod,
 # wet_sever_p_mod,
 # wet_lichen_p_mod,
-# wet_moss_nb_mod
+# wet_bryo_nb_mod
 
 
 
