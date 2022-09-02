@@ -15,7 +15,7 @@ library(bbmle)
 
 #READ DATA ----
 data <- read.csv("Point Frame/plot_data_QC_ELD.csv") 
-holders <- read.csv("Point Frame/plot_year_genus_fin.csv") %>%
+holders <- read.csv("Point Frame/plot_year_combination.csv") %>%
   filter(year != 2008)#file with all lifeform x plot combinations
 
 #FROMAT DATA ----
@@ -62,13 +62,6 @@ ggplot(canopy_height, aes(x = as.factor(year), y = max_height, fill = treatment)
   plot_theme+
   scale_fill_manual(values = c("plum1", 'seagreen3'), name = "Treatment")
 
-canopy_subsite_mod <- glmmTMB(max_height ~ subsite
-                            + (1|plot_pair/plot) + (1|year_scale),
-                            family = gaussian, data = canopy_height) 
-
-check_model(canopy_subsite_mod) #seems to be a good fit
-summary(canopy_subsite_mod)
-#Strong effect of subsite, will model dry vs. wet separately from here on
 
 #DRY
 dry_canopy_mod <- glmmTMB(max_height ~ treatment*year_scale
@@ -85,45 +78,9 @@ wet_canopy_mod <- glmmTMB(max_height ~ treatment*year_scale
                         family = gaussian, data = filter(canopy_height, subsite == 'NAKVAKWET'))
 summary(wet_canopy_mod)
 check_model(wet_canopy_mod)
-diagnose(wet_canopy_mod)
+
 sjPlot::plot_model(wet_canopy_mod, type = "int")
 sjPlot::plot_model(wet_canopy_mod)
-
-#Wet canopy - max height plot ----
-wet_canopy_plot <- sjPlot::plot_model(wet_canopy_mod, 
-                                    axis.labels=c("Treatment [OTC] * Year", "Year", "Treatment [OTC]"),
-                                    show.values=TRUE, show.p=TRUE,
-                                    title="Max. height - Canopy",
-                                    vline.color = 'light grey',
-                                    value.size = 3,
-                                    size = 10,
-                                    dot.size = 2,
-                                    line.size = 0.5,
-                                    value.offset = .3)+
-  scale_color_manual(values = c("#148335", "#B765A5"))+
-  plot_theme+
-  theme(axis.text.y=element_blank())
-
-wet_canopy_plot
-
-plot_row <- cowplot::plot_grid(wet_shrub_plot, wet_forb_plot, wet_canopy_plot,
-                               rel_widths = c(1.65,1, 1), ncol = 3)
-plot_row
-
-title <- ggdraw() + 
-  draw_label(
-    "Estimated effects of treatment (OTC) and time (scaled year) on plant heights in wet plots",
-    fontface = 'bold',
-    x = 0,
-    hjust = 0,
-    size = 10)
-
-plot_grid(
-  title, plot_row,
-  ncol = 1,
-  rel_heights = c(0.09, 1)) # rel_heights values control vertical title margins
-
-
 
 
 

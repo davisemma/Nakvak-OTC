@@ -19,7 +19,7 @@ plot_theme <-   theme_few() +
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),)
 
-dry <- sjPlot::plot_models(dry_gram_p_mod,
+dry <- sjPlot::plot_models(dry_gram_nb_mod,
                            dry_forb_p_mod,
                            dry_sdeci_p_mod,
                            dry_sever_nb_mod,
@@ -33,9 +33,9 @@ dry <- sjPlot::plot_models(dry_gram_p_mod,
                     show.legend = FALSE,
                     vline.color = '#F0F1F3',
                     value.size = 3,
-                    dot.size = 2,
-                    line.size = 0.5,
-                    spacing = 0.65,
+                    dot.size = 2.5,
+                    line.size = 0.3,
+                    spacing = 0.70,
                     axis.lim = c(0.1, 10))+
   scale_color_manual(values = c('#85D1F0', '#B765A5', '#A4A4A6', '#5D8A55', '#EF9FEF', '#ECD982'))+
   plot_theme+
@@ -56,9 +56,9 @@ wet <- sjPlot::plot_models(wet_gram_nb_mod,
                     show.legend = FALSE,
                     vline.color = '#F0F1F3',
                     value.size = 3,
-                    dot.size = 2,
-                    line.size = 0.5,
-                    spacing = 0.65,
+                    dot.size = 2.5,
+                    line.size = 0.3,
+                    spacing = 0.70,
                     axis.lim = c(0.1, 10))+
   scale_color_manual(values = c('#85D1F0', '#B765A5', '#A4A4A6', '#5D8A55', '#EF9FEF', '#ECD982'))+
   plot_theme+

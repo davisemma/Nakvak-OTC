@@ -18,20 +18,20 @@ getwd()
 setwd("Data")
 #READ DATA ----
 data <- read.csv("Point Frame/plot_data_QC_ELD.csv") 
-holders <- read.csv("Point Frame/plot_year_genus_bryo.csv") %>%
-  filter(., year != 2008)#file with all lifeform x plot combinations
+holders <- read.csv("Point Frame/plot_year_combination.csv") %>%
+  filter(., year != 2008)#file with all lifeform x plot combinations; remove 2008
 
 #FROMAT DATA ----
-#Calculate n encounters for each lifeform x plot
+#Calculate n encounters for each of 6 lifeforms per plot
 encounters <- data %>% 
   filter(., status == 'LIVE') %>% #select only 'live' encounters
-  filter(., year != 2008) %>%
+  filter(., year != 2008) %>% #remove 2008 observations
   mutate(lifeform = if_else(lifeform == "MOSS", "BRYOPHYTE", if_else(lifeform == "LIVERWORT", "BRYOPHYTE", lifeform))) %>%
-  group_by(subsite, treatment, plot, year, lifeform) %>%
+  group_by(subsite, treatment, plot, year, lifeform) %>% #liverworts and mosses become 'bryophytes'
   summarise(encounters = n()) #number of encounters of each lifeform in each plot
 
 #Merge encounters with placeholder file, replace 'NA' with '0', format
-encounters_merge <- merge(encounters, holders, all.y = TRUE) %>% #merge w 'holders' so that all combinations are represented ('0's are meaningful and should be included)
+encounters_merge <- merge(encounters, holders, all.y = TRUE) %>% #merge w 'holders' so that all combinations are represented (i.e., '0's are meaningful and should be included)
   mutate(encounters = replace_na(encounters, 0), #NA changed to '0'
          subsite = as.factor(subsite), 
          plot_pair = substr(plot,1,nchar(plot)-1),
@@ -46,11 +46,9 @@ sdeci <- filter(encounters_merge, lifeform == 'SDECI')
 sever <- filter(encounters_merge, lifeform == 'SEVER')
 lichen <- filter(encounters_merge, lifeform == 'LICHEN')
 forb <- filter(encounters_merge, lifeform == 'FORB')
-moss <- filter(encounters_merge, lifeform == 'MOSS')
-liverwort <- filter(encounters_merge, lifeform == 'LIVERWORT')
 bryo <- filter(encounters_merge, lifeform == 'BRYOPHYTE')
 
-#Plotting format - 
+#Plotting format -
 plot_theme <-   theme_few() + 
   theme(legend.position = "top",
         legend.justification = c(0,-1),
@@ -86,9 +84,9 @@ dry_gram_p_mod <- glmmTMB(encounters ~ treatment*year_scale
 
 check_zeroinflation(dry_gram_p_mod)
 check_overdispersion(dry_gram_p_mod)
-check_model(dry_gram_p_mod)
-#minor zero inflation present
-#RUN ZAP
+check_model(dry_gram_p_mod) #over dispersed and minor zero inflation present
+
+#ZAP model to see if dispersion due to zero's 
 dry_gram_zap_mod <- glmmTMB(encounters ~ treatment*year_scale
                                  + (1|plot_pair/plot) + (1|year_scale), ziformula = ~1,
                                  family = truncated_poisson, data = filter(gram, subsite == 'NAKVAKDRY'))
@@ -108,9 +106,9 @@ check_model(dry_gram_nb_mod)
 #Model comparison; ZAP and NB 
 AICtab(dry_gram_p_mod, dry_gram_zap_mod, dry_gram_nb_mod)
 
-#p model seems most parsimonious and nb is not a big improvement
-summary(dry_gram_p_mod)
-sjPlot::plot_model(dry_gram_p_mod)
+#nb model possibly slight improvement over p model 
+summary(dry_gram_nb_mod)
+sjPlot::plot_model(dry_gram_nb_mod)
 
 #WET - GRAM
 wet_gram_p_mod <- glmmTMB(encounters ~ treatment*year_scale
@@ -118,8 +116,8 @@ wet_gram_p_mod <- glmmTMB(encounters ~ treatment*year_scale
                    family = poisson, data = filter(gram, subsite == 'NAKVAKWET'))
 
 check_zeroinflation(wet_gram_p_mod) #no zeros 
-check_overdispersion(wet_gram_p_mod)
-#data are overdispersed, no zeros
+check_overdispersion(wet_gram_p_mod) #data are overdispersed, no zeros
+
 wet_gram_nb_mod <- glmmTMB(encounters ~ treatment*year_scale
                              + (1|plot_pair/plot) + (1|year_scale),
                              family = nbinom2, data = filter(gram, subsite == 'NAKVAKWET'))
@@ -130,11 +128,6 @@ check_overdispersion(wet_gram_nb_mod)
 AICtab(wet_gram_p_mod, wet_gram_nb_mod)
 summary(wet_gram_nb_mod)
 
-sjPlot::plot_model(dry_gram_nb_mod, type = 'int')
-sjPlot::plot_model(dry_gram_nb_mod)
-sjPlot::plot_model(wet_gram_nb_mod, type = 'int')
-sjPlot::plot_model(wet_gram_nb_mod)
-
 #LICHEN ----
 #Plot of the distribution of observations
 ggplot(lichen, aes(x = encounters, fill = treatment)) +
@@ -142,16 +135,6 @@ ggplot(lichen, aes(x = encounters, fill = treatment)) +
   facet_grid(year~subsite)+
   scale_fill_manual(values = c("plum1", 'seagreen3'), name = "Treatment")+
   plot_theme
-
-#Dry and wet seem to have very different distributions; test whether they could be modelled separately
-lichen_subsite_mod <- glmmTMB(encounters ~ subsite
-                            + (1|plot_pair/plot) + (1|year_scale),
-                            family = nbinom1, data = lichen) #nbinom1 better fit than poisson
-
-check_overdispersion(lichen_subsite_mod)
-check_model(lichen_subsite_mod)
-summary(lichen_subsite_mod)
-#Subsite has strong, significant effect. Now will model counts separately for wet vs dry
 
 #DRY - LICHEN
 dry_lichen_p_mod <- glmmTMB(encounters ~ treatment*year_scale
@@ -194,32 +177,6 @@ ggplot(sdeci, aes(x = encounters, fill = treatment)) +
   plot_theme+
   scale_fill_manual(values = c("plum1", 'seagreen3'), name = "Treatment")
 
-#Dry and wet seem to have similar distributions; test whether they could be modelled separately
-sdeci_subsite_mod <- glmmTMB(encounters ~ subsite
-                            + (1|plot_pair/plot) + (1|year_scale),
-                            family = nbinom1, data = sdeci) #nbinom1 better fit than poisson
-
-check_overdispersion(sdeci_subsite_mod)
-summary(sdeci_subsite_mod)
-#Subsite has weak, insignificant effect. Now will model counts together then separately for dry and wet
-
-#ALL SUBSITE - SDECI
-sdeci_p_mod <- glmmTMB(encounters ~ treatment*year_scale
-                             + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
-                             family = poisson, data = sdeci)
-
-check_overdispersion(sdeci_p_mod)
-check_zeroinflation(sdeci_p_mod)
-#overdispersion, no zeros
-sdeci_nb_mod <- glmmTMB(encounters ~ treatment*year_scale
-                            + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
-                            family = nbinom1, data = sdeci)
-
-check_overdispersion(sdeci_nb_mod)
-
-AICtab(sdeci_p_mod, sdeci_nb_mod)
-summary(sdeci_nb_mod)
-
 #SDECI - DRY
 dry_sdeci_p_mod <- glmmTMB(encounters ~ treatment*year_scale
                             + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
@@ -249,77 +206,6 @@ summary(wet_sdeci_nb_mod)
 sjPlot::plot_model(wet_sdeci_nb_mod)
 sjPlot::plot_model(wet_sdeci_nb_mod, type = 'int')
 
-#MOSS ----
-#Plot of the distribution of observations
-ggplot(moss, aes(x = encounters, fill = treatment)) +
-  geom_histogram(position = "identity", alpha = 0.7, binwidth = 10)+
-  facet_grid(year~subsite)+
-  plot_theme+
-  scale_fill_manual(values = c("plum1", 'seagreen3'), name = "Treatment")
-
-#Dry and wet seem to have very distributions; test whether they could be modelled separately
-moss_subsite_mod <- glmmTMB(encounters ~ subsite
-                              + (1|plot_pair/plot) + (1|year_scale),
-                              family = nbinom1, data = moss) #nbinom1 better fit than poisson
-
-check_overdispersion(moss_subsite_mod)
-summary(moss_subsite_mod)
-#Subsite has strong, significant effect. Now will model counts separately for wet vs dry
-
-#DRY - MOSS
-dry_moss_p_mod <- glmmTMB(encounters ~ treatment*year_scale
-                               + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
-                               family = poisson, data = filter(moss, subsite == 'NAKVAKDRY'))
-
-check_overdispersion(dry_moss_p_mod)
-check_zeroinflation(dry_moss_p_mod) 
-#overdispersion detected; zero inflation slight issue 
-
-dry_moss_zap_mod <- glmmTMB(encounters ~ treatment*year_scale
-                          + (1|plot_pair/plot) + (1|year_scale), ziformula = ~1,
-                          family = truncated_poisson, data = filter(moss, subsite == 'NAKVAKDRY'))
-
-check_overdispersion(dry_moss_zap_mod)
-check_zeroinflation(dry_moss_zap_mod) #Doesn't address dispersion and worse fit for 0's
-
-dry_moss_nb_mod <- glmmTMB(encounters ~ treatment*year_scale
-                                 + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
-                                 family = nbinom1, data = filter(moss, subsite == 'NAKVAKDRY'))
-
-check_overdispersion(dry_moss_nb_mod)
-check_zeroinflation(dry_moss_nb_mod)
-
-
-dry_moss_zanb_mod <- glmmTMB(encounters ~ treatment*year_scale
-                               + (1|plot_pair/plot) + (1|year_scale), ziformula = ~1,
-                               family = truncated_nbinom1, data = filter(moss, subsite == 'NAKVAKDRY'))
-
-check_overdispersion(dry_moss_zanb_mod)
-check_zeroinflation(dry_moss_zanb_mod)
-
-AICtab(dry_moss_p_mod, dry_moss_nb_mod,
-       dry_moss_zap_mod, dry_moss_zanb_mod)
-
-summary(dry_moss_nb_mod)
-sjPlot::plot_model(dry_moss_nb_mod, type = "int")
-#WET - MOSS
-wet_moss_p_mod <- glmmTMB(encounters ~ treatment*year_scale
-                                 + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
-                                 family = poisson, data = filter(moss, subsite == 'NAKVAKWET'))
-check_overdispersion(wet_moss_p_mod)
-check_zeroinflation(wet_moss_p_mod) #small absolute difference in zeros
-
-wet_moss_nb_mod <- glmmTMB(encounters ~ treatment*year_scale
-                             + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
-                             family = nbinom1, data = filter(moss, subsite == 'NAKVAKWET'))
-
-check_overdispersion(wet_moss_nb_mod)
-check_zeroinflation(wet_moss_nb_mod)
-
-AICtab(wet_moss_p_mod, wet_moss_nb_mod)
-summary(wet_moss_nb_mod)
-
-sjPlot::plot_model(wet_moss_nb_mod, type = 'int', terms = 'year_scale')
 
 #FORB ----
 #Plot of the distribution of observations
@@ -327,15 +213,6 @@ ggplot(forb, aes(x = encounters, fill = treatment)) +
   geom_histogram(position = "identity", alpha = 0.7, binwidth = 10)+
   facet_grid(year~subsite)+
   theme_bw()
-
-#Dry and wet seem to have very difference distributions; test whether they could be modelled separately
-forb_subsite_mod <- glmmTMB(encounters ~ subsite
-                            + (1|plot_pair/plot) + (1|year_scale),
-                            family = nbinom1, data = forb) #nbinom1 better fit than poisson
-
-check_overdispersion(forb_subsite_mod)
-summary(forb_subsite_mod)
-#Subsite has strong, significant effect. Now will model counts separately for wet vs dry
 
 #DRY - FORB
 dry_forb_p_mod <- glmmTMB(encounters ~ treatment*year_scale
@@ -345,7 +222,6 @@ dry_forb_p_mod <- glmmTMB(encounters ~ treatment*year_scale
 check_overdispersion(dry_forb_p_mod)
 check_zeroinflation(dry_forb_p_mod)
 
-AICtab(dry_forb_p_mod, dry_forb_zap_mod)
 #poisson good to go!
 summary(dry_forb_p_mod)
 
@@ -380,6 +256,7 @@ AICtab(wet_forb_p_mod, wet_forb_nb_mod,
        wet_forb_zap_mod, wet_forb_zanb_mod)
 
 summary(wet_forb_nb_mod)
+summary(wet_forb_zanb_mod)
 sjPlot::plot_model(wet_forb_nb_mod)
 sjPlot::plot_model(wet_forb_nb_mod, type = "int")
 
@@ -390,14 +267,6 @@ ggplot(sever, aes(x = encounters, fill = treatment)) +
   geom_histogram(position = "identity", alpha = 0.7, binwidth = 1)+
   facet_grid(year~subsite)+
   theme_bw()
-
-#Dry and wet seem to have very different distributions; test whether they could be modelled separately
-sever_subsite_mod <- glmmTMB(encounters ~ subsite
-                            + (1|plot_pair/plot) + (1|year_scale),
-                            family = nbinom1, data = sever) #nbinom1 better fit than poisson
-
-check_overdispersion(sever_subsite_mod)
-summary(sever_subsite_mod)
 
 #DRY - SEVER
 dry_sever_p_mod <- glmmTMB(encounters ~ treatment*year_scale
@@ -432,7 +301,7 @@ AICtab(dry_sever_p_mod, dry_sever_nb_mod,
        dry_sever_zap_mod, dry_sever_zanb_mod)
 
 summary(dry_sever_nb_mod)
-#summary(dry_sever_zanb_mod)
+
 sjPlot::plot_model(dry_sever_nb_mod, type = 'int')
 sjPlot::plot_model(dry_sever_zanb_mod, type = 'int')
 
@@ -444,35 +313,9 @@ wet_sever_p_mod <- glmmTMB(encounters ~ treatment*year_scale
 check_overdispersion(wet_sever_p_mod)
 check_zeroinflation(wet_sever_p_mod)
 
-wet_sever_zap_mod <- glmmTMB(encounters ~ treatment*year_scale
-                             + (1|plot_pair/plot) + (1|year_scale), ziformula = ~1,
-                             family = truncated_poisson, data = filter(sever, subsite == 'NAKVAKWET'))
-
-check_overdispersion(wet_sever_zap_mod) #improved dispersion
-check_zeroinflation(wet_sever_zap_mod) #A bit worse zero modelling
-
-wet_sever_nb_mod <- glmmTMB(encounters ~ treatment*year_scale
-                             + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
-                             family = nbinom1, data = filter(sever, subsite == 'NAKVAKWET'))
-
-check_overdispersion(wet_sever_nb_mod) #improved dispersion
-check_zeroinflation(wet_sever_nb_mod) #A bit worse zero modelling
-
-wet_sever_zanb_mod <- glmmTMB(encounters ~ treatment*year_scale
-                            + (1|plot_pair/plot) + (1|year_scale), ziformula = ~1,
-                            family = truncated_nbinom1, data = filter(sever, subsite == 'NAKVAKWET'))
-
-check_overdispersion(wet_sever_zanb_mod) #improved dispersion
-check_zeroinflation(wet_sever_zanb_mod) #A bit worse zero modelling
-
-AICtab(wet_sever_p_mod, wet_sever_nb_mod,
-       wet_sever_zap_mod)
-
 summary(wet_sever_p_mod)
 sjPlot::plot_model(wet_sever_p_mod)
 sjPlot::plot_model(wet_sever_p_mod, type = 'int')
-
-#----END
 
 #BRYOPHYTE
 #Dry bryophyte ---
@@ -495,7 +338,6 @@ sjPlot::plot_model(dry_bryo_nb_mod, type = 'int')
 summary(dry_bryo_nb_mod)
 
 
-
 wet_bryo_p_mod <- glmmTMB(encounters ~ treatment*year_scale
                            + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
                            family = poisson, data = filter(bryo, subsite == 'NAKVAKWET'))
@@ -513,9 +355,8 @@ check_zeroinflation(wet_bryo_nb_mod) #A bit worse zero modelling
 
 sjPlot::plot_model(wet_bryo_nb_mod, type = 'int')
 summary(wet_bryo_nb_mod)
-#----END
 
-
+#Dry mod
 dry_bryo_p_mod <- glmmTMB(encounters ~ treatment*year_scale
                           + (1|plot_pair/plot) + (1|year_scale), ziformula = ~0,
                           family = poisson, data = filter(bryo, subsite == 'NAKVAKDRY'))

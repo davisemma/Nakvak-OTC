@@ -28,7 +28,6 @@ plot_theme <-   theme_few() +
         panel.grid.minor = element_blank(),)
 
 #Mean july-august air temperature
-
 jul_aug <- filter(mean_temp, Month == 7 | Month == 8) %>%
   group_by(Year) %>%
   summarise(sum_mean = mean(Tmean_C))
@@ -36,7 +35,7 @@ jul_aug <- filter(mean_temp, Month == 7 | Month == 8) %>%
 temp_plot <- ggplot(jul_aug, aes(x = Year, y = sum_mean, ))+
   geom_smooth(size = 0.4, color = '#B765A5', alpha = 0.2)+
   geom_line(size = 0.4, color = "#E59AD2")+
-  ylab("Ave. July-August air temp. (°C)")+
+  ylab("Ave. air temp. (°C) (July-August)")+
   plot_theme+
   theme(plot.margin = unit(c(0.2,0.2,0.2,0.2), "cm"))
 
@@ -58,7 +57,7 @@ days_plot <- ggplot(warm_season, aes(x = Year, y = Total, color = Thres_variable
   geom_line(size = 0.4)+
   scale_color_manual(values = c("#C6C6C6", "#403F3F","#908E8E"))+
                      #labels=c("> 1°C", "> 5°C","> 10°C"))+
-  ylab('Number of days')+
+  ylab('Number of days (June-September)')+
   ylim(0, 140)+
   plot_theme+
   theme(legend.position = 'none')+
@@ -78,9 +77,9 @@ thaw_freeze <- filter(mean_temp, Month >=4 & Month <= 9)%>%
             Ratio = Thaw_dd/Freeze_dd)
 
 ratio_plot <- ggplot(thaw_freeze, aes(x = Year, y = Ratio))+
-  geom_smooth(size = 0.4, color = '#8AAACD', alpha = 0.2)+
-  geom_line(size = 0.4, color = "#B3C8E3")+
-  ylab("Thawing:freezing degree days\n(warm season)")+
+  geom_smooth(size = 0.4, color = '#46ABD2', alpha = 0.2)+
+  geom_line(size = 0.4, color = "#81CBE9")+
+  ylab("Thawing:freezing degree days (April-September)")+
   plot_theme+
   theme(plot.margin = unit(c(0.2, 0, 0.2, 0), "cm"))
 ratio_plot

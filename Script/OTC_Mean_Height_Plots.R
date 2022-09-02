@@ -34,8 +34,7 @@ dry <- sjPlot::plot_models(dry_gram_mod,
                     value.size = 3,
                     dot.size = 2,
                     line.size = 0.5,
-                    spacing = 0.65,
-                    axis.lim = c(-3, 3))+
+                    spacing = 0.65)+
   scale_color_manual(values = c('#403F3F', '#A4A4A6', '#5D8A55', '#EF9FEF', '#ECD982'))+
   plot_theme+
   theme(plot.margin = margin(3, 6, 3, 6))+

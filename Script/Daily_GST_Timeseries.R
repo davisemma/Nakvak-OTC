@@ -62,3 +62,10 @@ wet <- ggplot(filter(ground, subsite == 'Wet'), aes(x = date, y = t_ground, grou
   ylab('Average daily ground surface temperature (°C)')+
   xlab('Date')
 wet
+
+unique(ground$plot)
+
+
+
+
+
