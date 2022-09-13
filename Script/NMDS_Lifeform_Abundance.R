@@ -7,7 +7,7 @@ library("tidyverse")
 #READ DATA ----
 setwd("Data")
 data <- read.csv("Point Frame/plot_data_QC_ELD.csv") 
-holders <- read.csv("Point Frame/plot_year_genus_bryo.csv") %>%
+holders <- read.csv("Point Frame/plot_year_combination.csv") %>%
   filter(., year != 2008)#file with all lifeform x plot combinations
 
 #FROMAT DATA ----
@@ -84,13 +84,15 @@ plot_theme <-   theme_pubr() +
 nmds_plot <- ggplot()+
   ggtitle("nMDS of life form abundance in CTL plots") +
   stat_ellipse(data = plot_dat, aes(x=NMDS1, y=NMDS2, color = subsite, fill = subsite), level = 0.75, geom = "polygon", show.legend=FALSE)+
-  geom_point(data = plot_dat, aes(x=NMDS1, y=NMDS2, color = subsite, fill = subsite), shape = 21, color = 'black')+
-  scale_color_manual(values = c('#F3E086','#BED4F1'),
+  geom_point(data = plot_dat, aes(x=NMDS1, y=NMDS2, fill = subsite, shape = as.factor(year)), color = 'black', show.legend = TRUE)+
+  scale_color_manual(values = c('#EEE191','#82AAD9'),
                      labels = c("Dry", "Wet"),
                      name = 'Plot moisture class')+
-  scale_fill_manual(values = c('#F3E086','#BED4F1'),
+  scale_fill_manual(values = c('#EEE191','#82AAD9'),
                     labels = c("Dry", "Wet"),
                     name = 'Plot moisture class')+
+  scale_shape_manual(values = c(21, 22, 23),
+                     name = 'Year')+
   geom_text(data=labels, aes(x = NMDS1, y = NMDS2, label = labels), 
             hjust = 0,  vjust = 0, size = 2)+
   plot_theme

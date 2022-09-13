@@ -4,7 +4,8 @@ library(tidylog)
 library(lubridate)
 library('ggthemes')
 
-mean_temp <- read_csv("Air Temperature/air_temp_test.csv")
+mean_temp <- read_csv("Air Temperature/NAK_air_temp_vars.csv")
+ppt <- read_csv("Air Temperature/NAK_1981_2022_all_vars.csv")
 
 plot_theme <-   theme_few() + 
   theme(legend.position = "top",
@@ -33,38 +34,36 @@ jul_aug <- filter(mean_temp, Month == 7 | Month == 8) %>%
   summarise(sum_mean = mean(Tmean_C))
 
 temp_plot <- ggplot(jul_aug, aes(x = Year, y = sum_mean, ))+
-  geom_smooth(size = 0.4, color = '#B765A5', alpha = 0.2)+
-  geom_line(size = 0.4, color = "#E59AD2")+
-  ylab("Ave. air temp. (°C) (July-August)")+
+  geom_smooth(size = 0.4, color = '#E18D6E', alpha = 0.2)+
+  geom_line(size = 0.4, color = "#965635")+
+  ylab("Jul-Aug temp. (°C)")+
   plot_theme+
-  theme(plot.margin = unit(c(0.2,0.2,0.2,0.2), "cm"))
+  theme(plot.margin = unit(c(0.25,0.2,0.2,0.3), "cm"))
 
 temp_plot
 
 #T greater than ...
-warm_season <- filter(mean_temp, Month >=6 & Month <= 9)%>%
-  mutate(t_1 = if_else(Tmean_C > 1, 1, 0),
-         t_5 = if_else(Tmean_C > 5, 1, 0),
-         t_10 = if_else(Tmean_C > 10, 1, 0)) %>%
+warm_season <- filter(mean_temp, Month == 7 | Month == 8)%>%
+  mutate(t_5 = if_else(Tmean_C > 5, 1, 0),
+         t_10 = if_else(Tmean_C > 10, 1, 0),
+         t_15 = if_else(Tmean_C > 15, 1, 0)) %>%
   group_by(Year) %>%
-  summarise(sum_1 = sum(t_1),
-            sum_5 = sum(t_5),
-            sum_10 = sum(t_10))%>%
-  pivot_longer(., cols = sum_1:sum_10, names_to = "Thres_variable", values_to = "Total" )
+  summarise(sum_5 = sum(t_5),
+            sum_10 = sum(t_10),
+            sum_15 = sum(t_15))%>%
+  pivot_longer(., cols = sum_5:sum_15, names_to = "Thres_variable", values_to = "Total" )
 
 days_plot <- ggplot(warm_season, aes(x = Year, y = Total, color = Thres_variable))+
   geom_smooth(method = 'loess', size = 0.4, alpha = 0.2)+
   geom_line(size = 0.4)+
-  scale_color_manual(values = c("#C6C6C6", "#403F3F","#908E8E"))+
-                     #labels=c("> 1°C", "> 5°C","> 10°C"))+
-  ylab('Number of days (June-September)')+
-  ylim(0, 140)+
+  scale_color_manual(values = c("#908E8E", "#403F3F","#C6C6C6"))+
+  ylab('# Days (Jul-Aug)')+
   plot_theme+
   theme(legend.position = 'none')+
-  geom_text(x=1984, y=40, label="    > 10°C", size = 2.5)+
-  geom_text(x=1984, y=93, label="    > 5°C", size = 2.5)+
-  geom_text(x=1984, y=130, label="    > 1°C", size = 2.5)+
-  theme(plot.margin = unit(c(0.2,0.2,0.2,0.2), "cm"))
+  geom_text(x=1984, y=62, label="    > 5°C", size = 2.5)+
+  geom_text(x=1984, y=28, label="    > 10°C", size = 2.5)+
+  geom_text(x=1984, y=8, label="    > 15°C", size = 2.5)+
+  theme(plot.margin = unit(c(0.25,0.2,0.2,0.3), "cm"))
 
 days_plot
 
@@ -77,19 +76,47 @@ thaw_freeze <- filter(mean_temp, Month >=4 & Month <= 9)%>%
             Ratio = Thaw_dd/Freeze_dd)
 
 ratio_plot <- ggplot(thaw_freeze, aes(x = Year, y = Ratio))+
-  geom_smooth(size = 0.4, color = '#46ABD2', alpha = 0.2)+
-  geom_line(size = 0.4, color = "#81CBE9")+
-  ylab("Thawing:freezing degree days (April-September)")+
+  geom_smooth(size = 0.4, color = '#ABAA35', alpha = 0.2)+
+  geom_line(size = 0.4, color = "#106003")+
+  ylab("Thaw:freeze (Apr-Sep)")+
   plot_theme+
-  theme(plot.margin = unit(c(0.2, 0, 0.2, 0), "cm"))
+  theme(plot.margin = unit(c(0.25,0.2,0.2,0.3), "cm"))
 ratio_plot
 
-cowplot::plot_grid(temp_plot, ratio_plot, days_plot,
-                   labels = c("A", "B", "C"),
+
+#PRECIPITATION
+ppt_jul_aug <- filter(ppt, Month == 7 | Month == 8) %>%
+  group_by(Year) %>%
+  summarise(ppt_sum = sum(Precipitation),
+            var = c('jul-aug'))
+
+
+ppt_plot <- ggplot(ppt_jul_aug, aes(x = Year, y = ppt_sum))+
+  geom_smooth(size = 0.4, color = '#A8DCFC', alpha = 0.2)+
+  geom_line(size = 0.4, color = "#82AAD9")+
+  ylab("Jul-Aug precip. (mm)")+
+  plot_theme+
+  theme(plot.margin = unit(c(0.25,0.2,0.2,0.3), "cm"))
+
+ppt_plot
+
+cowplot::plot_grid(temp_plot, days_plot, ratio_plot, ppt_plot,
+                   labels = c("A", "B", "C", "D"),
+                   label_x = -.001,
+                   label_y = 1.02,
                    label_size = 10,
-                   ncol = 3)
+                   ncol = 2)
 
-
+cowplot::plot_grid(temp_plot, ppt_plot, days_plot, ratio_plot,
+                   labels = c("A", "B", "C", "D"),
+                   label_x = -.001,
+                   label_y = 1.02,
+                   label_size = 10,
+                   ncol = 4)
+cowplot::plot_grid(temp_plot, ppt_plot, days_plot, ratio_plot,
+                   labels = c("A", "B", "C", "D"),
+                   label_size = 10,
+                   ncol = 1)
 
 
 

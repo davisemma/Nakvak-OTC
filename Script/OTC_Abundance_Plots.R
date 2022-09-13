@@ -25,6 +25,7 @@ dry <- sjPlot::plot_models(dry_gram_nb_mod,
                            dry_sever_nb_mod,
                            dry_lichen_nb_mod,
                            dry_bryo_nb_mod,
+                           dry_litter_nb_mod,
                     title="Dry plots",
                     axis.labels=c("Treatment [OTC]\n* Year", "Year", "Treatment\n[OTC]"),
                     p.shape = TRUE,
@@ -37,10 +38,15 @@ dry <- sjPlot::plot_models(dry_gram_nb_mod,
                     line.size = 0.3,
                     spacing = 0.70,
                     axis.lim = c(0.1, 10))+
-  scale_color_manual(values = c('#85D1F0', '#B765A5', '#A4A4A6', '#5D8A55', '#EF9FEF', '#ECD982'))+
+  #scale_color_manual(values = c('#85D1F0', '#B765A5', '#A4A4A6', '#5D8A55', '#EF9FEF', '#ECD982'))+
+  #scale_color_manual(values = c('#D9A693', '#B8BAAF', '#92A58B', '#6C8190', '#D2897C', '#A88E5C'))+
+  scale_shape_manual(values = c(1, 19))+
+  scale_color_manual(values = c('#CFA058', '#C6D8E0', '#889D8A', '#BACCBE', '#E7C37A', '#F4B7A5', '#D6865A'))+
   plot_theme+
-  theme(plot.margin = margin(3, 6, 3, 6))+
-  scale_shape_manual(values = c(1, 19))
+  theme(plot.margin = margin(3, 6, 3, 6))
+  
+dry
+
 
 wet <- sjPlot::plot_models(wet_gram_nb_mod,
                            wet_forb_nb_mod,
@@ -48,6 +54,7 @@ wet <- sjPlot::plot_models(wet_gram_nb_mod,
                            wet_sever_p_mod,
                            wet_lichen_p_mod,
                            wet_bryo_nb_mod,
+                           wet_litter_nb_mod,
                     title="Wet plots",
                     axis.labels=c("", "", ""),
                     p.shape = TRUE,
@@ -60,7 +67,7 @@ wet <- sjPlot::plot_models(wet_gram_nb_mod,
                     line.size = 0.3,
                     spacing = 0.70,
                     axis.lim = c(0.1, 10))+
-  scale_color_manual(values = c('#85D1F0', '#B765A5', '#A4A4A6', '#5D8A55', '#EF9FEF', '#ECD982'))+
+  scale_color_manual(values = c('#CFA058', '#C6D8E0', '#889D8A', '#BACCBE', '#E7C37A', '#F4B7A5', '#D6865A'))+
   plot_theme+
   theme(plot.margin = margin(3, 6, 3, 6))+
   scale_shape_manual(values = c(1, 19))
@@ -72,6 +79,7 @@ fake <- sjPlot::plot_models(dry_gram_p_mod,
                             dry_sever_nb_mod,
                             dry_lichen_nb_mod,
                             dry_bryo_nb_mod,
+                            dry_litter_nb_mod,
                            title="fakers",
                            axis.labels=c("Treatment [OTC]\n* Year", "Year", "Treatment\n[OTC]"),
                            vline.color = 'light grey',
@@ -79,11 +87,11 @@ fake <- sjPlot::plot_models(dry_gram_p_mod,
                            dot.size = 2,
                            line.size = 0.5,
                            spacing = 0.65,
-                           legend.title = 'Lifeform',
+                           legend.title = 'Model',
                            #p.shape = TRUE,
-                           m.labels = c('Graminoid', 'Forb', 'Deciduous shrub', 'Evergreen shrub', 'Lichen', 'Bryophyte'),
+                           m.labels = c('Graminoid', 'Forb', 'Deciduous shrub', 'Evergreen shrub', 'Lichen', 'Bryophyte', 'Litter'),
                            p.threshold = c(0.05))+
-  scale_color_manual(values = c('#85D1F0', '#B765A5', '#A4A4A6', '#5D8A55', '#EF9FEF', '#ECD982'))+
+  scale_color_manual(values = c('#CFA058', '#C6D8E0', '#889D8A', '#BACCBE', '#E7C37A', '#F4B7A5', '#D6865A'))+
   plot_theme+
   theme(plot.margin = margin(6, 0, 6, 0))+
   scale_shape_manual(values = c(1, 19))
@@ -96,7 +104,9 @@ legend <- get_legend(fake + theme(legend.position = 'top',
                                   legend.title = element_text(size = 8),
                                   legend.justification = "left"))
 cowplot::plot_grid(legend, data, ncol = 1, rel_heights = c(0.2, 1))
-
+cowplot::plot_grid(data, data_height, ncol = 1, rel_heights = c(1, .8),
+                   labels = c('A', 'B'),
+                   label_size = 8)
 
 # #DRY MODELS
 # dry_gram_p_mod,
@@ -114,9 +124,18 @@ cowplot::plot_grid(legend, data, ncol = 1, rel_heights = c(0.2, 1))
 # wet_lichen_p_mod,
 # wet_bryo_nb_mod
 
+tab_model(dry_gram_p_mod,
+  dry_forb_p_mod,
+  dry_sdeci_p_mod,
+  dry_sever_nb_mod,
+  dry_lichen_nb_mod,
+  dry_bryo_nb_mod)
 
-
-
-
+tab_model(wet_gram_nb_mod,
+wet_forb_nb_mod,
+wet_sdeci_nb_mod,
+wet_sever_p_mod,
+wet_lichen_p_mod,
+wet_bryo_nb_mod)
 
   

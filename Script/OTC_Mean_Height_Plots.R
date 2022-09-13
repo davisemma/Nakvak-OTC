@@ -19,12 +19,13 @@ plot_theme <-   theme_few() +
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),)
 
-dry <- sjPlot::plot_models(dry_gram_mod,
+dry_height <- sjPlot::plot_models(dry_gram_mod,
                            dry_forb_mod,
                            dry_sdeci_mod,
                     dry_sever_mod,
                     dry_canopy_mod,
-                    title="Dry plots",
+                    #title="Dry plots",
+                    
                     axis.labels=c("Treatment [OTC]\n* Year", "Year", "Treatment\n[OTC]"),
                     p.shape = TRUE,
                     p.threshold = c(0.05),
@@ -32,20 +33,21 @@ dry <- sjPlot::plot_models(dry_gram_mod,
                     show.legend = FALSE,
                     vline.color = '#F0F1F3',
                     value.size = 3,
-                    dot.size = 2,
-                    line.size = 0.5,
-                    spacing = 0.65)+
-  scale_color_manual(values = c('#403F3F', '#A4A4A6', '#5D8A55', '#EF9FEF', '#ECD982'))+
+                    dot.size = 2.5,
+                    line.size = 0.3,
+                    spacing = 0.70,
+                    axis.lim = c(-2, 2))+
+  scale_color_manual(values = c('#609495', '#BACCBE', '#E7C37A', '#F4B7A5', '#D6865A'))+
   plot_theme+
   theme(plot.margin = margin(3, 6, 3, 6))+
   scale_shape_manual(values = c(1, 19))
 
-wet <- sjPlot::plot_models(wet_gram_mod,
+wet_height <- sjPlot::plot_models(wet_gram_mod,
                            wet_forb_mod,       
                     wet_sdeci_mod,
                     wet_sever_mod,
                     wet_canopy_mod,
-                    title="Wet plots",
+                    #title="Wet plots",
                     axis.labels=c("", "", ""),
                     p.shape = TRUE,
                     p.threshold = c(0.05),
@@ -53,21 +55,23 @@ wet <- sjPlot::plot_models(wet_gram_mod,
                     show.legend = FALSE,
                     vline.color = '#F0F1F3',
                     value.size = 3,
-                    dot.size = 2,
-                    line.size = 0.5,
-                    spacing = 0.65)+
+                    dot.size = 2.5,
+                    line.size = 0.3,
+                    spacing = 0.70)+
   scale_color_manual(values = c("#403F3F", '#A4A4A6', '#5D8A55', '#EF9FEF', '#ECD982', 'hot pink'))+
+  scale_color_manual(values = c('#609495', '#BACCBE', '#E7C37A', '#F4B7A5', '#D6865A'))+
   plot_theme+
   theme(plot.margin = margin(3, 6, 3, 6))+
   scale_shape_manual(values = c(1, 19))
+wet_height
   
 
-fake <- sjPlot::plot_models(wet_gram_mod,
+fake_height <- sjPlot::plot_models(wet_gram_mod,
                             wet_forb_mod,       
                             wet_sdeci_mod,
                             wet_sever_mod,
                             wet_canopy_mod,
-                           title="fakers",
+                           #title="fakers",
                            axis.labels=c("Treatment [OTC]\n* Year", "Year", "Treatment\n[OTC]"),
                            vline.color = 'light grey',
                            value.size = 3,
@@ -78,16 +82,22 @@ fake <- sjPlot::plot_models(wet_gram_mod,
                            p.shape = TRUE,
                            p.threshold = c(0.05),
                            m.labels = c('Graminoid', 'Forb', 'Deciduous shrub', 'Evergreen shrub', 'Max. canopy height'))+
-  scale_color_manual(values = c("#403F3F", '#A4A4A6', '#5D8A55', '#EF9FEF', '#ECD982'))+
+  scale_color_manual(values = c('#609495', '#BACCBE', '#E7C37A', '#F4B7A5', '#D6865A'))+
   plot_theme+
   theme(plot.margin = margin(6, 0, 6, 0))+
   scale_shape_manual(values = c(1, 19))
 
-data <- cowplot::plot_grid(dry, wet, ncol = 2, rel_widths = c(1.35, 1))
-legend <- get_legend(fake + theme(legend.position = 'top',
+data_height <- cowplot::plot_grid(dry_height, wet_height, ncol = 2, rel_widths = c(1.35, 1))
+legend_height <- get_legend(fake_height + theme(legend.position = 'top',
                                   legend.box.margin = margin(0, 0, 0, 0),
                                   legend.text = element_text(size = 8),
                                   legend.title = element_text(size = 8),
                                   legend.justification = "left"))
-cowplot::plot_grid(legend, data, ncol = 1, rel_heights = c(0.1, 1))
+cowplot::plot_grid(legend_height, data_height, ncol = 1, rel_heights = c(0.1, 1))
+
+cowplot::plot_grid(data, data_height, ncol = 1, rel_heights = c(1, .8),
+                   labels = c('A', 'B'),
+                   label_size = 8)
+#4.5 x 6.75
+
 

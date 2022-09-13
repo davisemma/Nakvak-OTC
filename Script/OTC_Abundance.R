@@ -15,7 +15,7 @@ library(performance)
 library(bbmle)
 
 getwd()
-setwd("Data")
+
 #READ DATA ----
 data <- read.csv("Point Frame/plot_data_QC_ELD.csv") 
 holders <- read.csv("Point Frame/plot_year_combination.csv") %>%
