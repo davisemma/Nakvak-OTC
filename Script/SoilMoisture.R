@@ -15,7 +15,7 @@ n_obs <- moisture_summary %>%
   group_by(site, year, subsite, treatment) %>%
   summarise(Obs = n())
 
-facet_labels <- as_labeller(c('Dry' = 'Dry plots', 'Wet' = 'Wet plots'))
+facet_labels <- as_labeller(c('Dry' = '', 'Wet' = ''))
 
 plot_theme <-   theme_few() + 
   theme(legend.position = "top",
@@ -37,18 +37,23 @@ plot_theme <-   theme_few() +
         axis.ticks.length = unit(1.5, "pt"))
 
 moisture_plot <- ggplot(moisture_summary, aes(x = year, y = mean_moisture, group = interaction(treatment, year), fill = interaction(treatment, subsite)))+
-  #ggtitle('Instantaneous soil moisture measurements by year')+
-  geom_boxplot(size = 0.3, outlier.size = 0.3)+
-  #scale_fill_manual(values = c("plum1", 'seagreen3'), name = "Treatment")+
-  scale_fill_manual(values = c("#E7D580", '#FFF7D4', '#B3C8E3', '#E5EDF8'), name = 'Treatment')+
+  geom_boxplot(size = .2, outlier.size = 0.5, position = position_dodge2(preserve = "single", padding = 0))+
+  scale_fill_manual(values = c("#F0DF84", '#F6F1D1', '#82AAD9', '#C2D8F2'))+
   labs(y = '% Soil moisture',
-       x = '')+
-  scale_x_continuous(breaks=seq(2009, 2021, 1),
-                     labels = c(2009, "", 2011, "", 2013, "", 2015, "", 2017, "", 2019, "", 2021))+
-  facet_wrap(~subsite, scales = 'fixed', labeller = facet_labels)+
+       x = 'Year')+
+  scale_x_continuous(breaks=seq(2008, 2022, 1),
+                     labels = c("", 2009, "", 2011, "", 2013, "", 2015, "", 2017, "", 2019, "", 2021, ""),
+                     limits = c(2008, 2022))+
+  facet_wrap(~subsite, scales = 'fixed', labeller = facet_labels_NVO) +
   plot_theme+
   theme(legend.position= "none")+
-  theme(plot.margin = margin(0, 6, 0, 6))
+  theme(plot.margin = margin(0, 6, 0, 6))+
+  theme(
+    strip.background = element_blank(),
+    strip.text.x = element_blank()
+  )
+
+moisture_plot
 
 fake <- ggplot(moisture_summary, aes(x = year, y = mean_moisture, group = interaction(treatment, year), fill = treatment))+
   #ggtitle('Instantaneous soil moisture measurements by year')+
@@ -58,8 +63,10 @@ fake <- ggplot(moisture_summary, aes(x = year, y = mean_moisture, group = intera
                     labels = c('Control', 'OTC'))+
   labs(y = '% Soil moisture',
        x = '')+
-  scale_x_continuous(breaks=seq(2009, 2021, 2))+
-  facet_wrap(~subsite, scales = 'fixed', labeller = facet_labels)+
+  scale_x_continuous(breaks=seq(2009, 2021, 1),
+                     labels = c(2009, "", 2011, "", 2013, "", 2015, "", 2017, "", 2019, "", 2021),
+                     limits = c(2009, 2021))+
+  facet_wrap(~subsite, scales = 'fixed', labeller = 'facet_labels')+
   plot_theme
 
 
@@ -69,8 +76,14 @@ legend <- get_legend(fake + theme(legend.position = 'top',
                                   legend.title = element_text(size = 8),
                                   legend.justification = "left"))
 
-plot_grid(legend, moisture_plot, ncol = 1, rel_heights = c(0.15,1))
-
+cowplot::plot_grid(legend, NVO_plot, moisture_plot, ncol = 1, rel_heights = c(0.15,1.15, 1),
+                   align = c("v"),
+                   axis = c("l"),
+                   labels = c("", "A", "B"),
+                   label_x = -.001,
+                   label_y = 1.02,
+                   label_size = 10)
+#5x6
 
 #3 x 6 inch export size 
 
@@ -83,18 +96,29 @@ model_dat <- moisture_summary %>%
          year_scale = as.numeric(scale(year)))
 
 wet_moisture <- glmmTMB(mean_moisture ~ treatment*year_scale
-                        + (1|plot_pair/plot) + (1|year_scale),
+                        + (1|plot) + (1|year_scale),
                         family = gaussian, data = filter(model_dat, subsite == 'Wet'))
 
 summary(wet_moisture)
 check_model(wet_moisture)
 
 dry_moisture <- glmmTMB(mean_moisture ~ treatment*year_scale
-                        + (1|plot_pair/plot) + (1|year_scale),
+                        + (1|plot) + (1|year_scale),
                         family = gaussian, data = filter(model_dat, subsite == 'Dry'))
 
 summary(dry_moisture)
 check_model(dry_moisture)
+
+all_moisture <- glmmTMB(mean_moisture ~ subsite*year_scale
+                        + (1|plot) + (1|year_scale),
+                        family = gaussian, data = model_dat)
+
+summary(all_moisture)
+check_model(all_moisture)
+
+sjPlot::tab_model(dry_moisture,
+                  wet_moisture,
+                  all_moisture)
 
 sjPlot::plot_model(wet_moisture)
 sjPlot::plot_model(wet_moisture, type = "int")

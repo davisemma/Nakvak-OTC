@@ -95,7 +95,9 @@ nmds_plot <- ggplot()+
                      name = 'Year')+
   geom_text(data=labels, aes(x = NMDS1, y = NMDS2, label = labels), 
             hjust = 0,  vjust = 0, size = 2)+
-  plot_theme
+  plot_theme+
+  xlab('nMDS 1')+
+  ylab('nMDS 2')
   
 nmds_plot
 

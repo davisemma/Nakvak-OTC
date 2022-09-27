@@ -1,0 +1,12 @@
+<PAMDataset>
+  <PAMRasterBand band="1">
+    <Description>2020</Description>
+    <Metadata>
+      <MDI key="STATISTICS_MAXIMUM">1.0473821217391</MDI>
+      <MDI key="STATISTICS_MEAN">-0.13824576544677</MDI>
+      <MDI key="STATISTICS_MINIMUM">-0.5418</MDI>
+      <MDI key="STATISTICS_STDDEV">0.17699546288344</MDI>
+      <MDI key="STATISTICS_VALID_PERCENT">50.51</MDI>
+    </Metadata>
+  </PAMRasterBand>
+</PAMDataset>

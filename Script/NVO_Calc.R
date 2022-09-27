@@ -68,7 +68,7 @@ DD_plot <- pivot_longer(DD_calc[,c(1:4, 10:11)], cols = c("NVO", "TSO"), names_t
   filter(Year != c('2011'))
 
 #Plotting
-facet_labels <- as_labeller(c('Dry' = 'Dry plots', 'Wet' = 'Wet plots'))
+facet_labels_NVO <- as_labeller(c('Dry' = 'Dry plots', 'Wet' = 'Wet plots'))
 facet_labels_blank <- as_labeller(c('Dry' = '', 'Wet' = ''))
 
 plot_theme <-   theme_few() + 
@@ -84,15 +84,16 @@ plot_theme <-   theme_few() +
 
 NVO_plot <- ggplot(filter(DD_plot, Variable == 'NVO'), aes(x = as.numeric(Year), y = Value, group = interaction(Treatment, Year), fill = interaction(Treatment, Subsite)))+
   geom_boxplot(size = .2, outlier.size = 0.5, position = position_dodge2(preserve = "single", padding = 0))+
-  scale_x_continuous(breaks=seq(2012, 2020, 1),
-                     labels = c(2012, '', 2014, '', 2016, '', 2018, '', 2020))+
-  scale_fill_manual(values = c("#E7D580", '#FFF7D4', '#B3C8E3', '#E5EDF8'))+
+  scale_fill_manual(values = c("#F0DF84", '#F6F1D1', '#82AAD9', '#C2D8F2'))+
   labs(y = 'Nival offset',
        x = '')+
-  facet_wrap(~Subsite, labeller = facet_labels)+
+  scale_x_continuous(breaks=seq(2008, 2022, 1),
+                     labels = c("", 2009, "", 2011, "", 2013, "", 2015, "", 2017, "", 2019, "", 2021, ""),
+                     limits = c(2008, 2022))+
+  facet_wrap(~Subsite, scales = 'fixed', labeller = facet_labels_NVO)+
   plot_theme+
-  theme(plot.margin = margin(2, 6, 0, 6))+
-  theme(legend.position= "none")
+  theme(legend.position= "none")+
+  theme(plot.margin = margin(0, 6, 0, 6))
 
 NVO_plot
 
@@ -124,13 +125,21 @@ nvo.dat <- filter(DD_plot, Variable == 'NVO')
 nvo.dat$NVO <- nvo.dat$Value
 nvo.dat$YearNum <- as.numeric(scale(as.numeric(nvo.dat$Year)), center = TRUE, scale = TRUE)
 library(glmmTMB)
-nvo_dry_mod <- glmmTMB(NVO ~ Treatment * YearNum + (1|Plot), 
+nvo_dry_mod <- glmmTMB(NVO ~ Treatment * YearNum + (1|Plot) + (1|YearNum), 
                    family = 'gaussian',data = filter(nvo.dat, Subsite == "Dry"))
 
-
-nvo_mod <- glmmTMB(NVO ~ Subsite * Treatment + (1|Plot), 
-                       family = 'gaussian',data = nvo.dat)
-
-summary(nvo_mod)
 summary(nvo_dry_mod)
+check_model(nvo_dry_mod)
+nvo_wet_mod <- glmmTMB(NVO ~ Treatment * YearNum + (1|Plot) + (1|YearNum), 
+                       family = 'gaussian',data = filter(nvo.dat, Subsite == "Dry"))
+summary(nvo_wet_mod)
+check_model(nvo_wet_mod)
+nvo_all_mod <- glmmTMB(NVO ~ Subsite * YearNum + (1|Plot) + (1|YearNum), 
+                       family = 'gaussian',data = nvo.dat)
+summary(nvo_all_mod)
+check_model(nvo_all_mod)
+
+sjPlot::tab_model(nvo_dry_mod,
+                  nvo_wet_mod,
+                  nvo_all_mod)
 

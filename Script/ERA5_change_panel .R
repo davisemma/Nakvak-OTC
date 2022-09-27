@@ -4,7 +4,8 @@ library(tidylog)
 library(lubridate)
 library('ggthemes')
 
-mean_temp <- read_csv("Air Temperature/NAK_air_temp_vars.csv")
+setwd("Data")
+temp <- read_csv("Air Temperature/NAK_1981_2022_air_temp.csv")
 ppt <- read_csv("Air Temperature/NAK_1981_2022_all_vars.csv")
 
 plot_theme <-   theme_few() + 
@@ -29,13 +30,19 @@ plot_theme <-   theme_few() +
         panel.grid.minor = element_blank(),)
 
 #Mean july-august air temperature
-jul_aug <- filter(mean_temp, Month == 7 | Month == 8) %>%
+jul_aug <- filter(temp, Month == 7 | Month == 8) %>%
   group_by(Year) %>%
   summarise(sum_mean = mean(Tmean_C))
 
-temp_plot <- ggplot(jul_aug, aes(x = Year, y = sum_mean, ))+
-  geom_smooth(size = 0.4, color = '#E18D6E', alpha = 0.2)+
-  geom_line(size = 0.4, color = "#965635")+
+temp_plot <- ggplot(jul_aug, aes(x = Year, y = sum_mean))+
+  geom_rect(
+    fill = "#F2F2F2", color = NA,
+    xmin = 2008,
+    xmax = 2021,
+    ymin = -Inf,
+    ymax = Inf)+
+  geom_smooth(size = 0.4, color = '#F4A48C', alpha = 0.2)+
+  geom_line(size = 0.4, color = "#D68457")+
   ylab("Jul-Aug temp. (°C)")+
   plot_theme+
   theme(plot.margin = unit(c(0.25,0.2,0.2,0.3), "cm"))
@@ -43,7 +50,7 @@ temp_plot <- ggplot(jul_aug, aes(x = Year, y = sum_mean, ))+
 temp_plot
 
 #T greater than ...
-warm_season <- filter(mean_temp, Month == 7 | Month == 8)%>%
+warm_season <- filter(temp, Month == 7 | Month == 8)%>%
   mutate(t_5 = if_else(Tmean_C > 5, 1, 0),
          t_10 = if_else(Tmean_C > 10, 1, 0),
          t_15 = if_else(Tmean_C > 15, 1, 0)) %>%
@@ -54,21 +61,27 @@ warm_season <- filter(mean_temp, Month == 7 | Month == 8)%>%
   pivot_longer(., cols = sum_5:sum_15, names_to = "Thres_variable", values_to = "Total" )
 
 days_plot <- ggplot(warm_season, aes(x = Year, y = Total, color = Thres_variable))+
+  geom_rect(
+    fill = "#F2F2F2", color = NA,
+    xmin = 2008,
+    xmax = 2021,
+    ymin = -Inf,
+    ymax = Inf)+
   geom_smooth(method = 'loess', size = 0.4, alpha = 0.2)+
   geom_line(size = 0.4)+
   scale_color_manual(values = c("#908E8E", "#403F3F","#C6C6C6"))+
   ylab('# Days (Jul-Aug)')+
   plot_theme+
   theme(legend.position = 'none')+
-  geom_text(x=1984, y=62, label="    > 5°C", size = 2.5)+
-  geom_text(x=1984, y=28, label="    > 10°C", size = 2.5)+
-  geom_text(x=1984, y=8, label="    > 15°C", size = 2.5)+
+  geom_text(x=1984, y=62, label="   > 5 °C", size = 2.5)+
+  geom_text(x=1984, y=28, label="    > 10 °C", size = 2.5)+
+  geom_text(x=1984, y=8, label= "    > 15 °C", size = 2.5)+
   theme(plot.margin = unit(c(0.25,0.2,0.2,0.3), "cm"))
 
 days_plot
 
 #Thawing/freezing DD ratio 
-thaw_freeze <- filter(mean_temp, Month >=4 & Month <= 9)%>%
+thaw_freeze <- filter(temp, Month >=4 & Month <= 9)%>%
   mutate(DD = if_else(Tmean_C > 0, 'thaw', 'freeze')) %>%
   group_by(Year) %>%
   summarise(Freeze_dd = (sum(Tmean_C[DD=="freeze"]))*-1,
@@ -76,13 +89,18 @@ thaw_freeze <- filter(mean_temp, Month >=4 & Month <= 9)%>%
             Ratio = Thaw_dd/Freeze_dd)
 
 ratio_plot <- ggplot(thaw_freeze, aes(x = Year, y = Ratio))+
-  geom_smooth(size = 0.4, color = '#ABAA35', alpha = 0.2)+
-  geom_line(size = 0.4, color = "#106003")+
+  geom_rect(
+    fill = "#F2F2F2", color = NA,
+    xmin = 2008,
+    xmax = 2021,
+    ymin = -Inf,
+    ymax = Inf)+
+  geom_smooth(size = 0.4, color = '#e7c37a', alpha = 0.2)+
+  geom_line(size = 0.4, color = "#cf9b4b")+
   ylab("Thaw:freeze (Apr-Sep)")+
   plot_theme+
   theme(plot.margin = unit(c(0.25,0.2,0.2,0.3), "cm"))
 ratio_plot
-
 
 #PRECIPITATION
 ppt_jul_aug <- filter(ppt, Month == 7 | Month == 8) %>%
@@ -90,35 +108,59 @@ ppt_jul_aug <- filter(ppt, Month == 7 | Month == 8) %>%
   summarise(ppt_sum = sum(Precipitation),
             var = c('jul-aug'))
 
-
 ppt_plot <- ggplot(ppt_jul_aug, aes(x = Year, y = ppt_sum))+
-  geom_smooth(size = 0.4, color = '#A8DCFC', alpha = 0.2)+
-  geom_line(size = 0.4, color = "#82AAD9")+
+  geom_rect(
+    fill = "#F2F2F2", color = NA,
+    xmin = 2008,
+    xmax = 2021,
+    ymin = -Inf,
+    ymax = Inf)+
+  geom_smooth(size = 0.4, color = '#8cb0ca', alpha = 0.2)+
+  geom_line(size = 0.4, color = "#609495")+
   ylab("Jul-Aug precip. (mm)")+
   plot_theme+
   theme(plot.margin = unit(c(0.25,0.2,0.2,0.3), "cm"))
 
 ppt_plot
 
-cowplot::plot_grid(temp_plot, days_plot, ratio_plot, ppt_plot,
-                   labels = c("A", "B", "C", "D"),
-                   label_x = -.001,
-                   label_y = 1.02,
-                   label_size = 10,
-                   ncol = 2)
+#COMBO PLOT
+clim <- cowplot::plot_grid(temp_plot, days_plot, ratio_plot, ppt_plot,
+                           labels = c("A", "B", "C", "D"),
+                           label_x = -.001,
+                           label_y = 1.02,
+                           label_size = 10,
+                           ncol = 2,
+                           align = c('v'))
 
-cowplot::plot_grid(temp_plot, ppt_plot, days_plot, ratio_plot,
-                   labels = c("A", "B", "C", "D"),
-                   label_x = -.001,
-                   label_y = 1.02,
-                   label_size = 10,
-                   ncol = 4)
-cowplot::plot_grid(temp_plot, ppt_plot, days_plot, ratio_plot,
-                   labels = c("A", "B", "C", "D"),
-                   label_size = 10,
-                   ncol = 1)
+#Run code for NDMI figure FIRST 
+ndmi <- cowplot::plot_grid(ndmi_plot, labels = c("E"), 
+                  label_x = -.001,
+                  label_y = 1.01,
+                  label_size = 10)
 
+cowplot::plot_grid(clim, ndmi, ncol = 2, rel_widths = c(1, 0.75))
+#EXPORT: 4 x 6.5
 
+#MEAN/MIN/MAX MONTHLY TEMPS ----
+monthly_temp <- temp %>%
+  mutate(Month = month(Month, label = TRUE, abbr = FALSE))%>%
+  group_by(Year, Month) %>%
+  summarise(Tmean = mean(Tmean_C))
 
-
+#Example - 
+ggplot(monthly_temp , aes(x = Year, y = Tmean))+
+  geom_rect(
+    fill = "#E5EDF8", color = NA,
+    xmin = 2008,
+    xmax = 2021,
+    ymin = -Inf,
+    ymax = Inf)+
+  geom_smooth(size = 0.5, fill = '#FFBBFF', color = '#B765A5')+
+  #geom_point(size = .1, fill = 'black')+
+  geom_line(size = 0.2)+
+  scale_x_continuous(breaks = c(1980, 2000, 2020))+
+  facet_wrap(~Month, scales = "free_y")+
+  ylab('Temperature (°C)')+
+  xlab('')+
+  plot_theme
 

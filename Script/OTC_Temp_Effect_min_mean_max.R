@@ -53,15 +53,14 @@ effect_wide <-   pivot_wider(daily_t, names_from = treatment, values_from = min_
             min_OTC_effect = mean(min_effect),
             max_OTC_effect = mean(max_effect),
             n_obs = n()) %>%
-  filter(., n_obs > 55)
-  
+  filter(., n_obs >= 55)
 
 effect_long <- pivot_longer(effect_wide, mean_OTC_effect:max_OTC_effect, names_to = 'var', values_to = 'values')
 
 #Plotting ----
-facet_labels <- as_labeller(c('max_OTC_effect' = 'Daily max. GST',
-                              'mean_OTC_effect' = 'Daily ave. GST',
-                              'min_OTC_effect' = 'Daily min. GST'
+facet_labels <- as_labeller(c('max_OTC_effect' = 'Daily maximum',
+                              'mean_OTC_effect' = 'Daily average',
+                              'min_OTC_effect' = 'Daily minimum'
 ))
 
 plot_theme <-   theme_few() + 
@@ -85,21 +84,39 @@ plot_theme <-   theme_few() +
         axis.ticks.length = unit(1.5, "pt"),)
 
 ggplot(effect_long, aes(x = as.integer(year), y = values, color = subsite, fill = subsite))+
-  geom_hline(yintercept = 0, color = 'dark grey')+
-  geom_smooth(alpha = 0.5, size = 0.75, show.legend = FALSE)+
+  geom_hline(yintercept = 0, size = 0.25, color = 'dark grey')+
+  geom_smooth(alpha = 0.3, size = 0.75, show.legend = FALSE)+
   geom_point(alpha = 0.7, shape = 21, size = 2, color = 'black')+
   theme_bw()+
   scale_fill_manual(values = c('#EEE191','#82AAD9'), name = 'Moisture class')+
   scale_color_manual(values = c('#EEE191','#82AAD9'), name = 'Moisture class')+
   ylab('Average OTC effect (°C)')+
-  xlab('')+
+  xlab('Year')+
   ggtitle('Effect of OTC on summer GST by soil moisutre class')+
   plot_theme+
-  scale_x_continuous(breaks = c(2012, 2013, 2014, 2015, 2016, 2017, 2018),
-                     labels = c(2012, '', 2014, '', 2016, '', 2018),
-                     limits = c(2012, 2018))+
+  scale_x_continuous(breaks = c(2012, 2013, 2014, 2015, 2016, 2017, 2018,2019, 2020),
+                     labels = c(2012, '', 2014, '', 2016, '', 2018, '', 2020))+
+                     #limits = c(2012, 2018))+
   facet_wrap(~factor(var, levels = c("min_OTC_effect", "mean_OTC_effect", "max_OTC_effect")), labeller = facet_labels)+
   theme(panel.spacing.x = unit(0.75, "lines"))
+
+#3 x 6.5
+
+#Summary values --- 
+effect_summary <- effect_long %>%
+  group_by(year, subsite, var) %>%
+  summarise(mean_effect = mean(values),
+            sd_effect = sd(values),
+            n_pairs = n())
+
+effect_summary_all <- filter(effect_long, year < 2019) %>%
+  group_by(subsite, var) %>%
+  summarise(mean_effect = mean(values),
+            sd_effect = sd(values),
+            n_pairs = n())
+
+
+
 
 
 
